@@ -10,9 +10,16 @@ Referencia de la capa de datos (Supabase / Postgres). Léela antes de tocar
 | `migrations/20260903135409_init_migration.sql` | Tablas base (`profiles`, `step_logs`, `duels`), enum `duel_status`, trigger de creación de perfil, RLS, grants a nivel de columna, realtime. |
 | `migrations/20260903140914_duel_rpcs.sql` | Ciclo de vida de duelos: RPCs `request_duel` / `respond_to_duel` / `sync_duel_steps` / `resolve_duel`, helpers `level_for_xp` y `duel_step_total`. |
 | `migrations/20260903141500_streaks.sql` | Rachas: `daily_step_goal`, `recompute_streak` y el trigger que mantiene `profiles.streak_days`. |
+| `migrations/20260903150000_clans.sql` | Clanes: tablas `clans`, `clan_members`, `clan_join_requests`, `clan_invites`; roles LÍDER/OFICIAL/MIEMBRO; solicitudes e invitaciones por código; helper `clan_tier_for_points`; vista `clan_leaderboard`; 13 RPCs de membresía. |
+| `migrations/20260903150500_clan_wars.sql` | Guerras de clanes: tablas `clan_wars`, `clan_war_participants` (roster congelado); helper `clan_war_step_total`; RPCs `request_clan_war` / `respond_to_clan_war` / `sync_clan_war_steps` / `resolve_clan_war`; ajuste de `clans.rank_points`. |
 
-Ninguna migración se ha aplicado todavía (no se ha ejecutado `supabase start`
-ni `supabase db push`). Son solo archivos.
+Estado de aplicación:
+
+- Las tres primeras (`…135409`, `…140914`, `…141500`) están aplicadas en el
+  proyecto vinculado (`tirhukkivndhmlknvbfr`).
+- Las dos de clanes (`…150000_clans`, `…150500_clan_wars`) **todavía no se han
+  hecho `supabase db push`**. Se validaron ejecutándolas sobre un Postgres 18
+  efímero (PGlite) con el flujo completo de clanes y guerras.
 
 ---
 
@@ -26,11 +33,13 @@ El rol `authenticated` (cualquier usuario logueado desde la app) solo puede:
 
 - editar su propio `username`
 - insertar/actualizar su `steps_count` diario
-- llamar a las cuatro RPCs de duelos
+- llamar a las RPCs de duelos, de clanes y de guerras de clanes
 
 **No puede** escribir directamente `xp`, `level`, `streak_days`, `is_pro`, los
-marcadores de duelos ni el ganador. Eso solo se mueve mediante funciones
-`SECURITY DEFINER` o la clave `service_role` (solo servidor).
+marcadores de duelos, el ganador, ni nada de las tablas de clanes
+(`clan_members`, `rank_points`, `member_count`, marcadores de guerra…). Eso solo
+se mueve mediante funciones `SECURITY DEFINER` o la clave `service_role` (solo
+servidor).
 
 Se refuerza con **dos capas independientes** que deben pasar ambas:
 
@@ -113,6 +122,10 @@ usuario real de auth.
 | `profiles` | cualquier autenticado lee cualquier perfil (para buscar amigos/rivales) | actualizar **solo tu propia fila** (`USING` + `WITH CHECK`, ambos `auth.uid() = id`) |
 | `step_logs` | solo tus filas | insertar/actualizar solo tus filas |
 | `duels` | solo duelos donde participas | **sin policy de escritura** — todo pasa por RPCs |
+| `clans`, `clan_members` | público (`authenticated` + `anon`) | sin policy de escritura — ver §10 |
+| `clan_join_requests` | solicitante + gestores del clan | sin policy de escritura — ver §10 |
+| `clan_invites` | solo miembros del clan | sin policy de escritura — ver §10 |
+| `clan_wars`, `clan_war_participants` | miembros de los clanes implicados | sin policy de escritura — ver §11 |
 
 `auth.uid()` va envuelto como `(SELECT auth.uid())` en cada policy para que
 Postgres lo evalúe una vez por consulta y no una vez por fila.
@@ -131,6 +144,10 @@ concede de vuelta solo lo seguro:
   `UPDATE (steps_count)`.
 - **`duels`**: solo `SELECT` (el INSERT se concedió en la migración inicial y
   luego se **revocó** en la migración de RPCs, una vez existió `request_duel`).
+- **Tablas de clanes** (`clans`, `clan_members`, `clan_join_requests`,
+  `clan_invites`, `clan_wars`, `clan_war_participants`): `REVOKE ALL` + solo
+  `SELECT` (y solo a `anon` en `clans` / `clan_members`). Cero `INSERT`/`UPDATE`
+  para el cliente: todo pasa por RPCs.
 
 A `service_role` nunca lo tocan estos revokes, así que el servidor conserva
 acceso completo.
@@ -218,9 +235,146 @@ pasos.
 
 ## 9. Realtime
 
-`duels` está añadida a la publicación `supabase_realtime`, así la app puede
-suscribirse y ver cambios de estado/marcador en vivo. Realtime también respeta
-RLS, así que un usuario solo recibe eventos de duelos en los que participa.
+`duels`, `clans`, `clan_members`, `clan_join_requests`, `clan_wars` y
+`clan_war_participants` están en la publicación `supabase_realtime`, así la app
+puede suscribirse a cambios en vivo. Realtime también respeta RLS, así que un
+usuario solo recibe eventos de las filas que su RLS le deja ver (duelos y
+guerras en los que participa; clanes y rosters son públicos).
+
+---
+
+## 10. Clanes (`20260903150000_clans.sql`)
+
+Capa social sobre `profiles`. Mismo principio anti-cheat: el cliente solo lee
+(`REVOKE ALL` + `GRANT SELECT`); toda mutación pasa por RPCs `SECURITY DEFINER`.
+
+### Tablas
+
+- **`clans`** — `name` (único, 3–24), `tag` (único, 2–5, se guarda en mayúsculas),
+  `description` (≤ 200), `leader_id` (FK a `profiles`), `rank_points` y
+  `member_count` **solo servidor**, `max_members` (default 20, rango 2–50).
+  `member_count` lo mantiene el trigger `clan_members_count`.
+- **`clan_members`** — `(clan_id, user_id)` PK, `role` enum
+  `clan_role` (`LEADER` / `OFFICER` / `MEMBER`), `joined_at`, `role_changed_at`.
+  **`UNIQUE (user_id)`** → un usuario pertenece a un solo clan. Índice único
+  parcial `WHERE role = 'LEADER'` → exactamente un líder por clan.
+- **`clan_join_requests`** — `status` enum `clan_join_request_status`
+  (`PENDING` → `ACCEPTED` / `REJECTED` / `CANCELLED`). Índice único parcial
+  `(clan_id, user_id) WHERE status = 'PENDING'` → una solicitud viva por par.
+- **`clan_invites`** — `code` único (8 hex en mayúsculas), `expires_at`,
+  `max_uses` (`0` = ilimitado), `uses`, `revoked`.
+
+### Roles
+
+- **MIEMBRO**: entra/sale, pide entrar a otros clanes tras salir.
+- **OFICIAL**: además acepta/rechaza solicitudes, crea/revoca invitaciones,
+  expulsa **miembros** (no a otros oficiales ni al líder).
+- **LÍDER**: además asciende/degrada (`set_clan_member_role`), traspasa el
+  liderazgo, edita el perfil del clan, disuelve el clan e inicia guerras.
+
+### RLS
+
+| Tabla | Lectura |
+|---|---|
+| `clans` | pública (`authenticated` + `anon`) — buscar clanes y leaderboard |
+| `clan_members` | pública — rosters visibles (factor viral) |
+| `clan_join_requests` | el solicitante + quien gestiona el clan (`can_manage_clan`) |
+| `clan_invites` | solo miembros del clan |
+
+Los helpers `is_clan_member`, `clan_role_of` y `can_manage_clan` son
+`SECURITY DEFINER` para que las policies los consulten sin recursión de RLS
+sobre `clan_members`.
+
+### RPCs de membresía
+
+| RPC | Quién | Qué hace |
+|---|---|---|
+| `create_clan(name, tag, description?)` | cualquiera sin clan | funda el clan y queda como `LEADER` |
+| `request_to_join_clan(clan_id)` | cualquiera sin clan | crea solicitud `PENDING` (falla si el clan está lleno) |
+| `cancel_join_request(request_id)` | el solicitante | `PENDING` → `CANCELLED` |
+| `respond_to_join_request(request_id, accept)` | líder / oficial | acepta (inserta `MEMBER`, re-valida cupo y que siga sin clan) o rechaza |
+| `create_clan_invite(clan_id, expires_in_hours=168, max_uses=0)` | líder / oficial | genera un código compartible |
+| `revoke_clan_invite(invite_id)` | líder / oficial | invalida el código |
+| `join_clan_with_invite(code)` | cualquiera sin clan | valida código (no revocado, no caducado, usos), entra como `MEMBER`, `uses++` |
+| `leave_clan()` | cualquier miembro | ver "traspaso de liderazgo" abajo |
+| `remove_clan_member(user_id)` | líder / oficial | expulsa (oficial solo a `MEMBER`) |
+| `transfer_clan_leadership(new_leader_id)` | líder | el objetivo → `LEADER`, el líder → `OFFICER` |
+| `set_clan_member_role(user_id, role)` | líder | asigna `OFFICER` o `MEMBER` |
+| `disband_clan()` | líder | disuelve (bloqueado si hay guerra `PENDING`/`ACTIVE`) |
+| `update_clan_profile(description?, tag?)` | líder | edita campos no nulos |
+
+Todas bloquean la fila del clan con `FOR UPDATE` cuando cambian miembros o cupo.
+
+### Traspaso de liderazgo al salir
+
+`leave_clan()` para un `LEADER`:
+
+- Sin más miembros → el clan se disuelve.
+- Con miembros y **algún oficial** → el liderazgo pasa automáticamente al
+  **oficial más antiguo** (por `role_changed_at`, luego `joined_at`).
+- Con miembros pero **sin oficiales** → falla y pide ascender a un oficial
+  (`set_clan_member_role`) o disolver.
+
+Un `OFFICER` / `MEMBER` simplemente se borra de `clan_members`.
+
+---
+
+## 11. Guerras de clanes y rango (`20260903150500_clan_wars.sql`)
+
+Equivalente de grupo a los duelos 1v1. Mismo ciclo `PENDING → ACTIVE → FINISHED`
+(o `PENDING → DECLINED`), mismas garantías (`SECURITY DEFINER`, `search_path=''`,
+`FOR UPDATE`).
+
+### Tablas
+
+- **`clan_wars`** — `challenger_clan_id`, `opponent_clan_id`, `status` enum
+  `clan_war_status`, ventana `start_date`/`end_date`, marcador
+  `challenger_steps`/`opponent_steps` (`BIGINT`), `winner_clan_id`,
+  `challenger_points_delta`/`opponent_points_delta`. `CHECK`s: clanes distintos,
+  `end_date >= start_date`, pasos ≥ 0, ganador es participante o `NULL`.
+- **`clan_war_participants`** — **roster congelado**: `(war_id, user_id)` PK más
+  `clan_id`. Se rellena al aceptar la guerra copiando `clan_members` de ambos
+  clanes. Los pasos se cuentan SOLO de estos usuarios → meter "caminantes" a
+  mitad de guerra no cambia el marcador.
+
+### RLS
+
+- `clan_wars`: miembros de cualquiera de los dos clanes.
+- `clan_war_participants`: miembros de los clanes de esa guerra.
+
+### RPCs
+
+| RPC | Quién | Qué hace |
+|---|---|---|
+| `request_clan_war(opponent_clan_id, duration_days=7)` | líder del clan retador | crea `PENDING`; rechaza duración fuera de 1–30, clan inexistente/vacío, o guerra ya `PENDING`/`ACTIVE` entre esos dos clanes |
+| `respond_to_clan_war(war_id, accept)` | líder del clan retado | acepta → `ACTIVE`, re-ancla la ventana a hoy y **congela ambos rosters**; rechaza → `DECLINED` |
+| `sync_clan_war_steps(war_id)` | cualquier miembro de los dos clanes | recalcula el marcador sobre `start_date … min(hoy, end_date)` desde el roster congelado |
+| `resolve_clan_war(war_id)` | participante o job `service_role` | solo tras `end_date`; idempotente; marcador final, ganador, y ajuste de `rank_points` |
+
+El helper interno `clan_war_step_total(war_id, clan_id, start, end)` hace el
+`SUM` sobre el roster congelado; su `EXECUTE` está revocado (solo lo usan las
+RPCs).
+
+### Rango
+
+- `clans.rank_points` (≥ 0, solo servidor) sube/baja al resolver una guerra.
+- **Deltas placeholder**: ganador `+25`, perdedor `-15` (con suelo en 0),
+  empate `+5` cada uno.
+- `clan_tier_for_points(points)` → `BRONZE` / `SILVER` / `GOLD` / `PLATINUM` /
+  `DIAMOND` (umbrales placeholder 100 / 300 / 700 / 1500). Llamable por el
+  cliente para previsualizar.
+- Vista `clan_leaderboard`: `id, name, tag, rank_points, tier, position`
+  (`RANK()` por `rank_points DESC`), `member_count`. `security_invoker`, pública.
+
+### Limitaciones conocidas
+
+- No hay job programado que cierre guerras vencidas (igual que con los duelos):
+  alguien tiene que llamar `resolve_clan_war` / `sync_clan_war_steps`.
+- Un líder de un clan que quedó con un solo miembro puede disolverlo durante una
+  guerra `ACTIVE` vía `leave_clan()` (forfeit silencioso). `disband_clan()` sí lo
+  bloquea.
+- Si el líder borra su cuenta de auth, el clan se disuelve en cascada
+  (`clans.leader_id ... ON DELETE CASCADE`). Follow-up: trigger de traspaso.
 
 ---
 
@@ -229,3 +383,6 @@ RLS, así que un usuario solo recibe eventos de duelos en los que participa.
 - Ratio pasos → XP (`/10`).
 - Ratio XP → nivel (`/1000`).
 - Meta diaria de pasos para la racha (`6000`).
+- Deltas de `rank_points` por guerra de clanes (`+25 / -15 / +5`).
+- Umbrales de tier de clan (`100 / 300 / 700 / 1500`).
+- Cupo de clan `max_members` (`20`) y duración por defecto de guerra (`7` días).
