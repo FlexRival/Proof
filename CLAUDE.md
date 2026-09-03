@@ -26,8 +26,21 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
   referencia autoritativa de la capa de datos** (tablas `profiles`, `step_logs`,
   `duels`; modelo anti-cheat; RPCs de duelos; rachas). Léela antes de tocar
   `supabase/migrations/`.
+- `docs/`: Investigación y decisiones de arquitectura pendientes.
+  **`docs/conteo-de-pasos.md`** — de dónde salen los pasos: Google Fit está
+  muerto, la vía es HealthKit + Health Connect, lo que eso obliga en build, y el
+  hueco anti-cheat de `step_logs`.
+  **`docs/healthkit-y-health-connect.md`** — cómo funcionan las dos por dentro:
+  permisos, límites de histórico y las trampas (en iOS un permiso denegado es
+  indistinguible de cero pasos). Léelos antes de escribir código de pasos.
 - `.claude/skills/`: Skills de desarrollo y seguridad (anti-leaks, UI, Supabase).
 
 ## Notas de implementación (estado actual)
 - **XP:** solo se gana al ganar un duelo (`floor(pasos_ganador / 10)`), no por
   pasos diarios. Ver `supabase/SCHEMA.md`.
+- **Pasos:** sin implementar y sin librería elegida. La captura de pasos
+  necesita módulos nativos, así que **rompe Expo Go** y exige un development
+  build. Ver `docs/conteo-de-pasos.md`.
+- **Sin clases de personaje.** Se descartaron: el esquema ya eliminó el enum
+  `user_class` y la columna `avatar_class`, y los tokens de color de clase se
+  quitaron del sistema de diseño.
