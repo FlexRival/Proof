@@ -22,5 +22,12 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 
 ## Estructura del Proyecto
 - `src/`: Código fuente de la app Expo (pantallas, componentes, hooks, servicios).
-- `supabase/`: Migraciones SQL, esquemas de BD (`profiles`, `step_logs`, `duels`, `clans`) y Edge Functions.
+- `supabase/`: Migraciones SQL y Edge Functions. **`supabase/SCHEMA.md` es la
+  referencia autoritativa de la capa de datos** (tablas `profiles`, `step_logs`,
+  `duels`; modelo anti-cheat; RPCs de duelos; rachas). Léela antes de tocar
+  `supabase/migrations/`.
 - `.claude/skills/`: Skills de desarrollo y seguridad (anti-leaks, UI, Supabase).
+
+## Notas de implementación (estado actual)
+- **XP:** solo se gana al ganar un duelo (`floor(pasos_ganador / 10)`), no por
+  pasos diarios. Ver `supabase/SCHEMA.md`.
