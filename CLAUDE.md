@@ -26,9 +26,9 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 - `supabase/`: Migraciones SQL y Edge Functions. **`supabase/SCHEMA.md` es la
   referencia autoritativa de la capa de datos** (tablas `profiles`, `step_logs`,
   `duels`, `clans` / `clan_members` / `clan_join_requests` / `clan_invites` /
-  `clan_wars` / `clan_war_participants`; modelo anti-cheat; RPCs de duelos,
-  clanes y guerras; rachas; rango de clanes). Léela antes de tocar
-  `supabase/migrations/`.
+  `clan_wars` / `clan_war_participants` / `friendships`; modelo anti-cheat;
+  RPCs de duelos, clanes, guerras y amistades; rachas; rango de clanes). Léela
+  antes de tocar `supabase/migrations/`.
 - `docs/`: Investigación y decisiones de arquitectura pendientes.
   **`docs/conteo-de-pasos.md`** — de dónde salen los pasos: Google Fit está
   muerto, la vía es HealthKit + Health Connect, lo que eso obliga en build, y el
@@ -75,9 +75,17 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 - **Rango de clanes:** `clans.rank_points` (solo servidor) sube/baja al resolver
   una guerra (placeholder `+25 / -15` con suelo 0, empate `+5`).
   `clan_tier_for_points()` da el tier; vista `clan_leaderboard` da la posición.
+- **Amistades:** tabla `friendships` (par `requester_id`/`addressee_id`,
+  estado `PENDING` → `ACCEPTED`/`DECLINED`/`CANCELLED`). Un índice único
+  parcial impide una segunda solicitud o amistad activa entre el mismo par en
+  cualquier dirección. Toda mutación pasa por RPCs `SECURITY DEFINER`
+  (`send_friend_request`, `respond_to_friend_request`,
+  `cancel_friend_request`, `remove_friend`). A diferencia de clanes, la tabla
+  no es pública — solo la ven los dos implicados. Ver `supabase/SCHEMA.md` §13.
 - **Estado de migraciones:** las 2 migraciones de clanes
-  (`20260903150000_clans.sql`, `20260903150500_clan_wars.sql`) aún no se han
-  hecho `supabase db push` al proyecto vinculado.
+  (`20260903150000_clans.sql`, `20260903150500_clan_wars.sql`) y la de
+  amistades (`20260904110000_friendships.sql`) aún no se han hecho
+  `supabase db push` al proyecto vinculado.
 - **Cierre automático de duelos/guerras:** la Edge Function
   `supabase/functions/resolve-expired-competitions/` + un cron de `pg_cron`
   (migración `20260904090000_resolve_expired_competitions_cron.sql`) llaman a

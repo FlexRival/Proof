@@ -14,17 +14,19 @@ Referencia de la capa de datos (Supabase / Postgres). Léela antes de tocar
 | `migrations/20260903150500_clan_wars.sql` | Guerras de clanes: tablas `clan_wars`, `clan_war_participants` (roster congelado); helper `clan_war_step_total`; RPCs `request_clan_war` / `respond_to_clan_war` / `sync_clan_war_steps` / `resolve_clan_war`; ajuste de `clans.rank_points`. |
 | `migrations/20260904090000_resolve_expired_competitions_cron.sql` | Activa `pg_cron` / `pg_net` y programa una llamada HTTP cada hora a la Edge Function `resolve-expired-competitions`, que cierra duelos y guerras vencidos. Ver §12. |
 | `migrations/20260904100000_clan_war_stats_view.sql` | Vista `clan_war_stats`: victorias / derrotas / empates / pasos totales de cada clan en guerras, agregados desde `clan_wars`. Ver §11. |
+| `migrations/20260904110000_friendships.sql` | Amistades: tabla `friendships` (solicitud → aceptada/rechazada/cancelada), índice único parcial que impide duplicados en cualquier dirección; RPCs `send_friend_request` / `respond_to_friend_request` / `cancel_friend_request` / `remove_friend`. Ver §13. |
 
 Estado de aplicación:
 
 - Las tres primeras (`…135409`, `…140914`, `…141500`) están aplicadas en el
   proyecto vinculado (`tirhukkivndhmlknvbfr`).
-- Las de clanes (`…150000_clans`, `…150500_clan_wars`) y la del cron
-  (`…090000_resolve_expired_competitions_cron`) **todavía no se han hecho
-  `supabase db push`**. Las dos de clanes se validaron ejecutándolas sobre un
-  Postgres 18 efímero (PGlite) con el flujo completo de clanes y guerras; la
-  del cron **no se puede validar así** porque PGlite no trae `pg_cron` ni
-  `pg_net` — solo se puede probar contra un proyecto Supabase real.
+- Las de clanes (`…150000_clans`, `…150500_clan_wars`), la del cron
+  (`…090000_resolve_expired_competitions_cron`) y la de amistades
+  (`…110000_friendships`) **todavía no se han hecho `supabase db push`**. Las
+  de clanes y la de amistades se validaron ejecutándolas sobre un Postgres 18
+  efímero (PGlite) con su flujo completo; la del cron **no se puede validar
+  así** porque PGlite no trae `pg_cron` ni `pg_net` — solo se puede probar
+  contra un proyecto Supabase real.
 
 ---
 
@@ -419,6 +421,50 @@ del ganador nunca se otorgaba. Esto lo cierra:
 - **No se puede validar sobre PGlite** (el Postgres efímero usado para las
   migraciones de clanes): `pg_cron` y `pg_net` no están disponibles ahí. Solo
   se prueba contra un proyecto Supabase real.
+
+---
+
+## 13. Amistades (`20260904110000_friendships.sql`)
+
+Relación bidireccional entre dos `profiles`, base de "duelos contra amigos".
+Mismo principio anti-cheat que clanes: el cliente solo lee (`REVOKE ALL` +
+`GRANT SELECT`), toda mutación pasa por RPCs `SECURITY DEFINER`.
+
+### Tabla `friendships`
+
+Una fila por solicitud/relación: `requester_id`, `addressee_id`, `status` enum
+`friendship_status` (`PENDING` → `ACCEPTED` / `DECLINED`, o `PENDING` →
+`CANCELLED`). `user_low_id`/`user_high_id` son columnas generadas
+(`LEAST`/`GREATEST` de los dos ids) que normalizan el par sin orden; un índice
+único parcial sobre `(user_low_id, user_high_id) WHERE status IN
+('PENDING','ACCEPTED')` impide una segunda solicitud u otra amistad activa
+entre los mismos dos usuarios sin importar quién invita a quién. Tras
+`DECLINED`/`CANCELLED` se puede volver a pedir amistad (nueva fila);
+`remove_friend` borra la fila en vez de dejar un estado terminal, por la misma
+razón.
+
+A diferencia de `clans`/`clan_members`, esta tabla **no es pública**: la
+policy de `SELECT` solo deja ver las filas donde el usuario es `requester_id` o
+`addressee_id`.
+
+### RPCs
+
+| RPC | Quién | Qué hace |
+|---|---|---|
+| `send_friend_request(addressee_id)` | cualquiera | crea solicitud `PENDING`; rechaza a uno mismo, destinatario inexistente, o solicitud/amistad ya activa en cualquier dirección |
+| `respond_to_friend_request(friendship_id, accept)` | el destinatario | acepta → `ACCEPTED`, o rechaza → `DECLINED`; solo mientras `PENDING` |
+| `cancel_friend_request(friendship_id)` | el solicitante | `PENDING` → `CANCELLED` |
+| `remove_friend(friendship_id)` | cualquiera de los dos | borra la fila; solo si está `ACCEPTED` |
+
+Todas bloquean la fila con `FOR UPDATE` antes de mutarla.
+
+### Validación
+
+Igual que clanes: aplicada y probada sobre un Postgres 18 efímero (PGlite),
+incluyendo el flujo completo (solicitud → duplicado rechazado → aceptar →
+rechazar → reintentar tras rechazo → cancelar → eliminar amistad → RLS). Aún
+sin `supabase db push` al proyecto vinculado — ver estado de aplicación al
+principio de este documento.
 
 ---
 
