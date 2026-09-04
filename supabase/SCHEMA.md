@@ -12,14 +12,19 @@ Referencia de la capa de datos (Supabase / Postgres). Léela antes de tocar
 | `migrations/20260903141500_streaks.sql` | Rachas: `daily_step_goal`, `recompute_streak` y el trigger que mantiene `profiles.streak_days`. |
 | `migrations/20260903150000_clans.sql` | Clanes: tablas `clans`, `clan_members`, `clan_join_requests`, `clan_invites`; roles LÍDER/OFICIAL/MIEMBRO; solicitudes e invitaciones por código; helper `clan_tier_for_points`; vista `clan_leaderboard`; 13 RPCs de membresía. |
 | `migrations/20260903150500_clan_wars.sql` | Guerras de clanes: tablas `clan_wars`, `clan_war_participants` (roster congelado); helper `clan_war_step_total`; RPCs `request_clan_war` / `respond_to_clan_war` / `sync_clan_war_steps` / `resolve_clan_war`; ajuste de `clans.rank_points`. |
+| `migrations/20260904090000_resolve_expired_competitions_cron.sql` | Activa `pg_cron` / `pg_net` y programa una llamada HTTP cada hora a la Edge Function `resolve-expired-competitions`, que cierra duelos y guerras vencidos. Ver §12. |
+| `migrations/20260904100000_clan_war_stats_view.sql` | Vista `clan_war_stats`: victorias / derrotas / empates / pasos totales de cada clan en guerras, agregados desde `clan_wars`. Ver §11. |
 
 Estado de aplicación:
 
 - Las tres primeras (`…135409`, `…140914`, `…141500`) están aplicadas en el
   proyecto vinculado (`tirhukkivndhmlknvbfr`).
-- Las dos de clanes (`…150000_clans`, `…150500_clan_wars`) **todavía no se han
-  hecho `supabase db push`**. Se validaron ejecutándolas sobre un Postgres 18
-  efímero (PGlite) con el flujo completo de clanes y guerras.
+- Las de clanes (`…150000_clans`, `…150500_clan_wars`) y la del cron
+  (`…090000_resolve_expired_competitions_cron`) **todavía no se han hecho
+  `supabase db push`**. Las dos de clanes se validaron ejecutándolas sobre un
+  Postgres 18 efímero (PGlite) con el flujo completo de clanes y guerras; la
+  del cron **no se puede validar así** porque PGlite no trae `pg_cron` ni
+  `pg_net` — solo se puede probar contra un proyecto Supabase real.
 
 ---
 
@@ -187,8 +192,10 @@ agregado.
 
 ### `resolve_duel(duel_id)`
 
-Cualquier participante, o un job de `service_role`. Solo después de `end_date`.
-Idempotente (si ya está `FINISHED` devuelve sin cambios).
+Cualquier participante, o un job de `service_role` (ver §12: la Edge Function
+`resolve-expired-competitions` lo llama automáticamente por cron). Solo
+después de `end_date`. Idempotente (si ya está `FINISHED` devuelve sin
+cambios).
 
 1. Totales finales de pasos sobre toda la ventana.
 2. Más pasos gana; empate exacto → sin ganador.
@@ -349,7 +356,7 @@ Equivalente de grupo a los duelos 1v1. Mismo ciclo `PENDING → ACTIVE → FINIS
 | `request_clan_war(opponent_clan_id, duration_days=7)` | líder del clan retador | crea `PENDING`; rechaza duración fuera de 1–30, clan inexistente/vacío, o guerra ya `PENDING`/`ACTIVE` entre esos dos clanes |
 | `respond_to_clan_war(war_id, accept)` | líder del clan retado | acepta → `ACTIVE`, re-ancla la ventana a hoy y **congela ambos rosters**; rechaza → `DECLINED` |
 | `sync_clan_war_steps(war_id)` | cualquier miembro de los dos clanes | recalcula el marcador sobre `start_date … min(hoy, end_date)` desde el roster congelado |
-| `resolve_clan_war(war_id)` | participante o job `service_role` | solo tras `end_date`; idempotente; marcador final, ganador, y ajuste de `rank_points` |
+| `resolve_clan_war(war_id)` | participante o job `service_role` (ver §12) | solo tras `end_date`; idempotente; marcador final, ganador, y ajuste de `rank_points` |
 
 El helper interno `clan_war_step_total(war_id, clan_id, start, end)` hace el
 `SUM` sobre el roster congelado; su `EXECUTE` está revocado (solo lo usan las
@@ -365,16 +372,53 @@ RPCs).
   cliente para previsualizar.
 - Vista `clan_leaderboard`: `id, name, tag, rank_points, tier, position`
   (`RANK()` por `rank_points DESC`), `member_count`. `security_invoker`, pública.
+- Vista `clan_war_stats` (`20260904100000_clan_war_stats_view.sql`):
+  `clan_id, name, tag, wars_won, wars_lost, wars_drawn, wars_played,
+  total_war_steps`, agregados en tiempo de consulta sobre `clan_wars`
+  (`status = 'FINISHED'`, contando cada guerra desde el punto de vista de
+  cada clan participante, sea retador u oponente). No hay contador
+  equivalente en `clans` — a propósito, para no duplicar estado que haya que
+  mantener sincronizado en `resolve_clan_war`. `security_invoker`, pública
+  como `clan_leaderboard`.
 
 ### Limitaciones conocidas
 
-- No hay job programado que cierre guerras vencidas (igual que con los duelos):
-  alguien tiene que llamar `resolve_clan_war` / `sync_clan_war_steps`.
+- El cierre automático de guerras vencidas ahora corre por cron (§12), pero
+  sigue habiendo hasta una hora de retraso entre que `end_date` pasa y el
+  siguiente disparo del job — no es instantáneo.
 - Un líder de un clan que quedó con un solo miembro puede disolverlo durante una
   guerra `ACTIVE` vía `leave_clan()` (forfeit silencioso). `disband_clan()` sí lo
   bloquea.
 - Si el líder borra su cuenta de auth, el clan se disuelve en cascada
   (`clans.leader_id ... ON DELETE CASCADE`). Follow-up: trigger de traspaso.
+
+---
+
+## 12. Cierre automático de duelos y guerras (`resolve-expired-competitions`)
+
+Antes de esta pieza, `resolve_duel` y `resolve_clan_war` solo se ejecutaban si
+algún participante abría la app y algo del cliente las llamaba — un duelo
+vencido con ambos jugadores ausentes se quedaba `ACTIVE` para siempre y el XP
+del ganador nunca se otorgaba. Esto lo cierra:
+
+- **Edge Function** `supabase/functions/resolve-expired-competitions/`
+  (Deno). Corre con la `service_role` key: lista `duels` y `clan_wars` en
+  estado `ACTIVE` con `end_date` anterior a hoy, y llama a `resolve_duel` /
+  `resolve_clan_war` en cada uno. Cada fila se resuelve de forma
+  independiente — el fallo de una no bloquea las demás — y la respuesta trae
+  qué se resolvió y qué falló.
+- Solo acepta llamadas cuyo JWT tenga `role = service_role` (comprueba el
+  claim del `Authorization: Bearer`), así que no es una ruta invocable por la
+  app ni por un usuario con la `anon key`.
+- **Migración** `20260904090000_resolve_expired_competitions_cron.sql` activa
+  `pg_cron` + `pg_net` y programa un `net.http_post` a esta función cada hora
+  (`0 * * * *`, placeholder). La URL del proyecto y la `service_role_key` se
+  leen de **Supabase Vault** en tiempo de ejecución (`vault.decrypted_secrets`)
+  — nunca están en el código ni en la migración; hay que darlas de alta a mano
+  una vez por proyecto (instrucciones en la cabecera de la migración).
+- **No se puede validar sobre PGlite** (el Postgres efímero usado para las
+  migraciones de clanes): `pg_cron` y `pg_net` no están disponibles ahí. Solo
+  se prueba contra un proyecto Supabase real.
 
 ---
 
@@ -386,3 +430,4 @@ RPCs).
 - Deltas de `rank_points` por guerra de clanes (`+25 / -15 / +5`).
 - Umbrales de tier de clan (`100 / 300 / 700 / 1500`).
 - Cupo de clan `max_members` (`20`) y duración por defecto de guerra (`7` días).
+- Frecuencia del cron de cierre de duelos/guerras (`cada hora`).
