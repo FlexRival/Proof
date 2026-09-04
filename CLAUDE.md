@@ -41,7 +41,7 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
   `src/constants/colors.ts`. Léela antes de escribir cualquier color en un
   componente; la skill `design-system` lo hace cumplir.
 - `.claude/skills/`: Skills de desarrollo y seguridad (anti-leaks, UI, Supabase,
-  sistema de diseño).
+  sistema de diseño, patrón repositorio).
 
 ## Notas de implementación (estado actual)
 - **XP:** solo se gana al ganar un duelo (`floor(pasos_ganador / 10)`), no por

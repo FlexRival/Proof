@@ -1,32 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { ProfileRow } from '@/lib/database.types';
-import { supabase } from '@/lib/supabase';
+import { type Profile, profileRepository } from '@/repositories';
 
-export type ProfileState =
-  | { status: 'loading' }
-  | { status: 'signedOut' }
-  | { status: 'ready'; profile: ProfileRow }
-  | { status: 'error'; message: string };
+import type { AuthedAsyncState } from '@/hooks/async-state';
+
+export type ProfileState = AuthedAsyncState<Profile>;
 
 async function fetchProfileState(): Promise<ProfileState> {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-
-  if (userError || !userData.user) {
-    return { status: 'signedOut' };
+  try {
+    const profile = await profileRepository.getCurrentProfile();
+    return profile ? { status: 'ready', data: profile } : { status: 'signedOut' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error desconocido.';
+    return { status: 'error', message };
   }
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userData.user.id)
-    .single();
-
-  if (error) {
-    return { status: 'error', message: error.message };
-  }
-
-  return { status: 'ready', profile: data };
 }
 
 /**
@@ -59,13 +46,13 @@ export function useProfile() {
 
     void sync();
 
-    const { data } = supabase.auth.onAuthStateChange(() => {
+    const unsubscribe = profileRepository.onSessionChange(() => {
       void sync();
     });
 
     return () => {
       subscribed = false;
-      data.subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
