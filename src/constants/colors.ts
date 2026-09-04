@@ -77,6 +77,13 @@ export const Palette = {
   powerTint: 'rgba(198, 255, 74, 0.12)',
   rivalTint: 'rgba(255, 92, 56, 0.12)',
   neutralTint: 'rgba(255, 255, 255, 0.05)',
+  /**
+   * Pista de la barra de objetivo de pasos. Medida sobre `Captura3.png`: la
+   * parte vacía da #2C2E33 sobre la card #13151C, o sea blanco al 10 % (0.106,
+   * 0.107 y 0.101 por canal — consistente, luego es alfa y no un gris opaco).
+   * Más clara que `hairline` (7 %), que es la pista de la barra de XP.
+   */
+  neutralTrack: 'rgba(255, 255, 255, 0.10)',
 
   /**
    * Velo de modal. No está en la paleta original; deriva de `void` con el
@@ -159,6 +166,21 @@ export const Colors = {
      * la superficie, no como un gris opaco: mismo valor que `border`.
      */
     xpTrack: Palette.hairline,
+
+    /**
+     * Pasos. **Neutro a propósito, no Power.** La lámina de fundamentos es
+     * explícita: «Steps are shown as activity and duel progress. Never as a
+     * live XP ticker». Teñir los pasos de verde de marca los haría leer como
+     * XP, que es justo lo que el diseño evita. Medido: la cifra `8,742` y el
+     * relleno de su barra de objetivo dan #F1F2F5, el color de texto.
+     */
+    steps: Palette.text,
+    /**
+     * Pista (parte vacía) de cualquier barra de progreso lisa: el objetivo de
+     * pasos y las dos barras del duelo de la pantalla principal. Medida en la
+     * de pasos; las del duelo comparten tratamiento.
+     */
+    meterTrack: Palette.neutralTrack,
 
     /**
      * Racha. Medido en el diseño: el chip `🔥 9` va con relleno y texto

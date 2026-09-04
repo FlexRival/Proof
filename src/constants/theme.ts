@@ -153,5 +153,15 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+/**
+ * Alto que la barra de pestañas le roba al contenido. Una pantalla que
+ * scrollea lo suma a su `paddingBottom` para que su último elemento no quede
+ * debajo de la barra.
+ *
+ * `default` cubre web, donde la barra la pinta `app-tabs.web.tsx`: 16 de
+ * padding exterior arriba y abajo, 8 del contenedor y una fila de ~28. Sin
+ * este caso `Platform.select` devolvía `undefined` en web y el último
+ * elemento de cada pantalla quedaba tapado.
+ */
+export const BottomTabInset = Platform.select({ ios: 50, android: 80, default: 76 });
 export const MaxContentWidth = 800;

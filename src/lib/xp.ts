@@ -53,3 +53,17 @@ export function levelProgress(xp: number): LevelProgress {
 function normalizeXp(xp: number): number {
   return Math.max(0, Math.floor(xp));
 }
+
+/**
+ * XP que se lleva quien gana un duelo.
+ *
+ * Espeja `xp += floor(pasos_ganador / 10)` de `resolve_duel`
+ * (`supabase/SCHEMA.md` §7). Igual que `XP_PER_LEVEL`, se duplica a propósito:
+ * la pantalla de victoria enseña la cifra antes de volver a consultar al
+ * servidor, y el cálculo real ya lo hizo Postgres.
+ */
+export const STEPS_PER_XP = 10;
+
+export function xpForDuelWin(winnerSteps: number): number {
+  return Math.floor(normalizeXp(winnerSteps) / STEPS_PER_XP);
+}

@@ -10,6 +10,7 @@ import Animated, {
 
 import { ThemedText } from '@/components/themed-text';
 import { Gradients, Motion, Radius, Spacing } from '@/constants/theme';
+import { formatCount } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
@@ -30,16 +31,16 @@ export type XpBarProps = {
   showValues?: boolean;
   /** A `false` la barra salta al valor nuevo. Útil en tests y en listas. */
   animated?: boolean;
+  /**
+   * A `true` la barra arranca vacía y se llena hasta `value` al montar, en vez
+   * de aparecer ya rellena. Para celebraciones — la subida de nivel y la
+   * victoria de un duelo — donde el barrido *es* parte de lo que se celebra.
+   */
+  revealOnMount?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
 const TRACK_HEIGHT = 8;
-
-/**
- * Los separadores de millar siguen a la copy de la app, que está en inglés
- * (`2,450 / 3,000`). Cuando haya i18n esto sale de la locale, no de aquí.
- */
-const NUMBER_FORMAT = new Intl.NumberFormat('en-US');
 
 export function XpBar({
   value,
@@ -47,6 +48,7 @@ export function XpBar({
   label = 'XP PROGRESS',
   showValues = true,
   animated = true,
+  revealOnMount = false,
   style,
 }: XpBarProps) {
   const theme = useTheme();
@@ -55,7 +57,10 @@ export function XpBar({
   // vacía es mejor que propagar un NaN al ancho.
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
 
-  const progress = useSharedValue(ratio);
+  // El efecto de abajo corre también al montar, así que arrancar en 0 basta
+  // para que la barra se llene sola: no hace falta que la pantalla le cambie
+  // el valor después de montarse.
+  const progress = useSharedValue(revealOnMount ? 0 : ratio);
 
   useEffect(() => {
     progress.value = animated
@@ -84,7 +89,7 @@ export function XpBar({
           ) : null}
           {showValues ? (
             <ThemedText type="caption" themeColor="xp">
-              {`${NUMBER_FORMAT.format(value)} / ${NUMBER_FORMAT.format(max)}`}
+              {`${formatCount(value)} / ${formatCount(max)}`}
             </ThemedText>
           ) : null}
         </View>

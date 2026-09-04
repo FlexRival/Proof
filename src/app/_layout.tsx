@@ -1,14 +1,23 @@
 import { useFonts } from 'expo-font';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { FONT_ASSETS } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+/**
+ * Layout raíz: un `Stack` con el grupo de pestañas dentro.
+ *
+ * El `Stack` no es decorativo. Antes la app era solo un navegador de
+ * pestañas, y un navegador de pestañas únicamente registra las rutas que
+ * tienen trigger: `/settings` existía como archivo pero abrirla pintaba la
+ * pantalla principal. Todo lo que no es pestaña —ajustes, la subida de
+ * nivel— necesita esta capa para poder abrirse encima de las pestañas y
+ * poder cerrarse volviendo atrás.
+ */
+export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
 
   // El splash nativo sigue en pantalla (`preventAutoHideAsync`), así que no
@@ -27,7 +36,18 @@ export default function TabLayout() {
   return (
     <ThemeProvider value={DarkTheme}>
       <AnimatedSplashOverlay />
-      <AppTabs />
+
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="settings" />
+        {/*
+          La subida de nivel se presenta como modal: tapa las pestañas
+          mientras dura la celebración y su «Continue» es un `back` que
+          devuelve exactamente a donde estabas.
+        */}
+        <Stack.Screen name="level-up" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="victory" options={{ presentation: 'modal' }} />
+      </Stack>
     </ThemeProvider>
   );
 }

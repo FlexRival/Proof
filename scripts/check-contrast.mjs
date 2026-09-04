@@ -30,6 +30,10 @@ const TEXT_TOKENS = [
   'victory',
   'defeat',
   'info',
+  // Mismo valor que `text`, pero con nombre propio: es el rol «pasos», que el
+  // diseño mantiene neutro a propósito. Se comprueba como texto porque la
+  // cifra grande de pasos lo usa.
+  'steps',
 ];
 
 /** Superficies de cromo heredadas del scaffold, solo con texto a plena fuerza. */
@@ -84,6 +88,9 @@ const EXEMPT = [
   'rivalSurface',
   'neutralSurface',
   'xpTrack',
+  // Blanco al 10 %: alfa, igual que `xpTrack`, así que esta comprobación (que
+  // solo sabe leer hex) no puede evaluarla.
+  'meterTrack',
 ];
 
 function channelLuminance(value) {

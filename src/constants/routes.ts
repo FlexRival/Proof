@@ -12,7 +12,7 @@ import type { Href } from 'expo-router';
  * su href. La barra web (`app-tabs.web.tsx`) sí puede recorrer `TAB_ROUTES`
  * con un `.map()`.
  */
-export type RouteKey = 'home' | 'duels' | 'friends' | 'profile' | 'settings';
+export type RouteKey = 'home' | 'duels' | 'friends' | 'profile' | 'settings' | 'levelUp' | 'victory';
 
 export type RouteDefinition = {
   key: RouteKey;
@@ -33,6 +33,20 @@ export const ROUTES: Record<RouteKey, RouteDefinition> = {
    * pantalla en `src/app/settings.tsx` es un placeholder sin contenido real.
    */
   settings: { key: 'settings', href: '/settings', label: 'Settings', tab: false },
+  /**
+   * Celebración, no destino: se abre con los niveles en la URL
+   * (`/level-up?from=11&to=12`) cuando un duelo hace subir de nivel, y se
+   * cierra volviendo atrás. Nunca va en la barra de navegación — el `href`
+   * de aquí es la ruta pelada, sin parámetros, y quien la abre los añade.
+   */
+  levelUp: { key: 'levelUp', href: '/level-up', label: 'Level up', tab: false },
+  /**
+   * La otra celebración: el resultado de un duelo ganado. Mismo trato que
+   * `levelUp` — se abre con el resultado en la URL
+   * (`/victory?opponent=@alexruiz&steps=8742&days=3`) y se cierra volviendo
+   * atrás. El `href` de aquí es la ruta pelada; quien la abre pone lo demás.
+   */
+  victory: { key: 'victory', href: '/victory', label: 'Victory', tab: false },
 };
 
 /** Solo las rutas de la barra de navegación, en el orden en que se pintan. */

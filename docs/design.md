@@ -55,6 +55,7 @@ Pila de elevación, de más hundida a más elevada.
 | Dock               | `dock`                          | `rgba(17, 19, 26, 0.94)`  | Barra de navegación inferior. |
 | Locked             | `locked`                        | `#0E1017`                 | Fondo de slot bloqueado (logro/ítem sin desbloquear). |
 | Pista de XP        | `xpTrack`                       | `rgba(255, 255, 255, 0.07)` | Parte vacía de la barra de XP. **Medida** como blanco al 7 % sobre la superficie (mismo valor que `border`), no como un gris opaco. |
+| Pista de barra     | `meterTrack`                    | `rgba(255, 255, 255, 0.10)` | Parte vacía de las barras lisas (objetivo de pasos, lados del duelo). **Medida** sobre `Captura3.png`: #2C2E33 sobre la card #13151C da 0.106 / 0.107 / 0.101 por canal — alfa, no un gris opaco. Más clara que la pista de XP. |
 
 `backgroundElement` / `backgroundSelected` son tokens heredados del scaffold
 de Expo, hoy con uso real: fondo/selección de los botones de la barra de
@@ -87,9 +88,10 @@ ya no hay que inventarlo, está medido.
 | Power Bright (alt)    | *(`Palette.powerBrightAlt`)*       | `#E2FF8E`     | Segundo valor claro dado en el diseño original; sin contexto de cuándo usar este en vez del anterior. |
 | Power Deep            | `primarySolid`                      | `#B4F02E`     | Extremo oscuro del degradado; relleno sólido de botón primario. |
 | Power Mid             | `xpSolid`                           | `#8CE03C`     | Inicio de las barras de XP. |
-| Power Flash           | *(`Palette.powerFlash`)*           | `#EEFFB8`     | Flash del level up. Sin token semántico: úsalo directo de `Palette` en la animación de subida de nivel. |
+| Power Flash           | *(`Palette.powerFlash`)*           | `#EEFFB8`     | Flash del level up. Sin token semántico: se usa directo de `Palette` en `LevelUpBadge`, su único consumidor. |
 | On Power              | `onPrimary`, `onXp`                | `#0A0C05`     | Texto/ícono sobre superficies de Power. |
 | Rival                 | `defeat`                            | `#FF5C38`     | Rival, derrotas, badges de aviso. |
+| Pasos                 | `steps`                             | `#F1F2F6`     | **Neutro a propósito, no Power.** Cifra de pasos y relleno de su barra de objetivo. Ver § Pasos. |
 
 ### Degradados (`Gradients`)
 
@@ -114,6 +116,36 @@ degradado es un array de paradas). Viven en `Gradients`, en `colors.ts`:
 | Text Muted      | `textMuted`, `info` | `#808594`  | Labels, metadatos. También cubre "info / duelo pendiente" — ver huecos. |
 | Text Dim        | `textDim`           | `#4E545F`  | Labels de sección, contenido bloqueado. Contraste bajo a propósito. |
 | Nav Idle        | `navIdle`           | `#8A90A0`  | Pestaña inactiva de la barra de navegación. |
+
+## Pasos
+
+Los pasos **no llevan color de marca**. La lámina de fundamentos es explícita:
+
+> Steps are shown as activity and duel progress. Never as a live XP ticker.
+
+Teñir de Power la cifra de pasos o su barra los haría leer como XP, que es
+justo lo que el diseño evita: el XP solo se gana ganando un duelo. Por eso
+`steps` apunta a `Palette.text` (blanco) y no a `primary`, aunque el valor
+coincida con `text` — el nombre propio existe para que nadie lo «arregle»
+pasándolo a verde.
+
+Medido en `Captura3.png`: la cifra `8,742` y el relleno de su barra de
+objetivo dan **#F1F2F5**; la parte vacía, **#2C2E33** sobre la card.
+
+Las barras del duelo sí van teñidas —tú en Power, el rival en Rival— porque
+ahí el color no dice «esto es XP», dice quién va ganando. Comparten la pista
+`meterTrack` con la de pasos.
+
+**Ir por detrás no se pinta de rojo.** En la lista de duelos (`Captura5.png`)
+la fila en la que vas perdiendo lleva la barra en gris —medido **#767C8C**, el
+Text Muted original del diseño, de ahí el tono `muted` de `MeterBar`— y
+reserva el Rival para la cifra (`BEHIND 1,204`). Solo la barra partida del
+duelo destacado enfrenta Power contra Rival directamente.
+
+**Sobre la pista, una inconsistencia del propio diseño:** la barra de pasos la
+pinta a blanco 10 % y las filas de duelo a blanco 7 %. La diferencia sobre
+casi negro es imperceptible, así que aquí se estandariza en el 10 % de
+`meterTrack` en vez de arrastrar dos tokens para lo mismo.
 
 ## Bordes
 
@@ -192,6 +224,8 @@ pantalla debería poder montarse con estos sin volver a escribir a mano un
 | `SegmentedControl`  | `segmented-control.tsx`   | Filtro de pantalla (ACTIVE / PENDING / HISTORY), controlado |
 | `Notice`            | `notice.tsx`              | `primary`, `rival`, `info` |
 | `XpBar`             | `xp-bar.tsx`              | Rótulo + `2,450 / 3,000` + pista con degradado XP |
+| `LevelUpBadge`      | `level-up-badge.tsx`      | Transición `11 → 12` animada de la subida de nivel |
+| `MeterBar`          | `meter-bar.tsx`           | Barra lisa sin rótulos: `steps`, `power`, `rival`, `muted` |
 
 Superficies medidas en la lámina, por si se rehacen estos componentes:
 `Notice` y el segmento activo de `SegmentedControl` van sobre `#1B1E27`
@@ -204,9 +238,21 @@ Los labels de `Button` van en mayúsculas siempre: es lo que hace la variante
 
 `XpBar` recibe `value` / `max` ya calculados, no el XP total: la aritmética
 de nivel vive solo en `levelProgress()` (`src/lib/xp.ts`), que espeja el SQL.
-El relleno se anima con `Motion.duration.base` cuando el valor cambia.
+El relleno se anima con `Motion.duration.base` cuando el valor cambia. Con
+`revealOnMount` arranca vacía y se llena sola al montar, para las pantallas
+de celebración donde el barrido es parte de lo que se celebra.
 
-Todavía no es primitivo el render del avatar (KAN-19).
+`LevelUpBadge` pinta el nivel viejo en `textDim`, la flecha en `textMuted` y
+el nuevo en `display` sobre `primary`, con entrada en `Motion.spring.bouncy`
+y un flash a `Palette.powerFlash`. **Respeta «reducir movimiento» del
+sistema** (`useReducedMotion()` de Reanimated): con esa preferencia activada
+la cifra aparece ya asentada, sin rebote ni flash. Cualquier celebración
+nueva a pantalla completa debería hacer lo mismo.
+
+Todavía no es primitivo el render del avatar (KAN-19). La pantalla de subida
+de nivel (`src/app/level-up.tsx`) ya le reserva el sitio con una `Card`
+cuadrada vacía, para que al llegar KAN-19 sea rellenar el hueco y no rehacer
+el layout.
 
 ## Huecos y decisiones que tomé sin dato explícito
 
