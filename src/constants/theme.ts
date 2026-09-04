@@ -13,7 +13,7 @@ import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 
 import { Palette } from '@/constants/colors';
 
-export { Colors, Palette, type ThemeColor } from '@/constants/colors';
+export { Colors, Gradients, Palette, type ThemeColor } from '@/constants/colors';
 
 export const Fonts = Platform.select({
   ios: {
@@ -101,21 +101,21 @@ export const Radius = {
  */
 export const Elevation = {
   low: {
-    shadowColor: Palette.ink950,
+    shadowColor: Palette.void,
     shadowOpacity: 0.12,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
   medium: {
-    shadowColor: Palette.ink950,
+    shadowColor: Palette.void,
     shadowOpacity: 0.18,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
   high: {
-    shadowColor: Palette.ink950,
+    shadowColor: Palette.void,
     shadowOpacity: 0.26,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },

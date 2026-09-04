@@ -15,14 +15,15 @@ import { Colors } from '../src/constants/colors.ts';
 const MIN_TEXT = 4.5; // WCAG 1.4.3, texto normal
 const MIN_NON_TEXT = 3; // WCAG 1.4.11, componentes de interfaz
 
-/** Superficies principales: todo token de texto debe leerse sobre las cuatro. */
-const MAIN_SURFACES = ['background', 'surface', 'surfaceRaised', 'surfaceSunken'];
+/** Superficies principales: todo token de texto debe leerse sobre las cinco. */
+const MAIN_SURFACES = ['background', 'surface', 'surfaceRaised', 'surfaceSunken', 'locked'];
 
 /** Tokens de texto e iconografía. */
 const TEXT_TOKENS = [
   'text',
   'textSecondary',
   'textMuted',
+  'navIdle',
   'primary',
   'xp',
   'streak',
@@ -35,9 +36,6 @@ const TEXT_TOKENS = [
 const CHROME_SURFACES = ['backgroundElement', 'backgroundSelected'];
 const CHROME_TEXT = ['text', 'textSecondary'];
 
-/** Superficie teñida de marca y los únicos textos que admite. */
-const TINTED = { surface: 'primarySurface', text: ['text', 'primary'] };
-
 /** Texto sobre relleno sólido. */
 const SOLID_PAIRS = [
   ['onPrimary', 'primarySolid'],
@@ -47,15 +45,29 @@ const SOLID_PAIRS = [
 /** Pares no textuales que deben distinguirse entre sí. */
 const NON_TEXT_PAIRS = [['xpSolid', 'xpTrack']];
 
-/** Contorno de control interactivo: 3:1 sobre las superficies principales. */
-const INTERACTIVE_BORDER = 'borderStrong';
-
 /**
- * Exentos. `border` es una divisoria decorativa, no un componente que haya que
- * percibir para operar. `overlay` lleva alfa y su contraste depende de lo que
- * tape.
+ * Exentos.
+ *
+ * `border`, `borderStrong`, `overlay`, `dock`, `primaryEdge`,
+ * `primaryEdgeStrong` y `rivalEdge` llevan alfa (`rgba(...)`): su contraste
+ * depende de lo que haya debajo y esta comprobación (que solo sabe leer hex)
+ * no puede evaluarlos. Por eso el diseño ya no tiene un "borde interactivo"
+ * garantizado por token — ver docs/design.md § Bordes.
+ *
+ * `textDim` es de-enfatizado a propósito (labels de sección, contenido
+ * bloqueado): no tiene que cumplir el mínimo de texto normal, igual que un
+ * estado disabled.
  */
-const EXEMPT = ['border', 'overlay'];
+const EXEMPT = [
+  'border',
+  'borderStrong',
+  'overlay',
+  'dock',
+  'primaryEdge',
+  'primaryEdgeStrong',
+  'rivalEdge',
+  'textDim',
+];
 
 function channelLuminance(value) {
   const c = value / 255;
@@ -97,8 +109,6 @@ function assertEveryTokenClassified(scheme, tokens) {
     ...TEXT_TOKENS,
     ...CHROME_SURFACES,
     ...EXEMPT,
-    TINTED.surface,
-    INTERACTIVE_BORDER,
     ...SOLID_PAIRS.flat(),
     ...NON_TEXT_PAIRS.flat(),
   ]);
@@ -121,11 +131,7 @@ for (const [scheme, tokens] of Object.entries(Colors)) {
   for (const text of CHROME_TEXT) {
     for (const surface of CHROME_SURFACES) check(scheme, tokens, text, surface, MIN_TEXT);
   }
-  for (const text of TINTED.text) check(scheme, tokens, text, TINTED.surface, MIN_TEXT);
   for (const [text, fill] of SOLID_PAIRS) check(scheme, tokens, text, fill, MIN_TEXT);
-  for (const surface of MAIN_SURFACES) {
-    check(scheme, tokens, INTERACTIVE_BORDER, surface, MIN_NON_TEXT);
-  }
   for (const [a, b] of NON_TEXT_PAIRS) check(scheme, tokens, a, b, MIN_NON_TEXT);
 }
 

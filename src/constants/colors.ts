@@ -1,190 +1,156 @@
 /**
- * Capa de color del sistema de diseño de ProofIt.
+ * Capa de color del sistema de diseño de ProofIt. Ver `docs/design.md` para
+ * la referencia legible de cada token — este archivo es lo que corre, ese
+ * documento es lo que se lee.
  *
  * Este archivo no importa nada a propósito: `scripts/check-contrast.mjs` lo
  * carga directamente con Node para verificar cada par texto/fondo contra WCAG
  * 2.1. Si le añades un import de `react-native` o del alias `@/`, rompes esa
  * comprobación.
  *
- * Al editar un hexadecimal, ejecuta `pnpm check:contrast`.
+ * Al editar un valor, ejecuta `pnpm check:contrast` y actualiza
+ * `docs/design.md` en el mismo cambio.
  */
 
 /**
- * Rampas en bruto. Único sitio del proyecto donde vive un hexadecimal literal.
+ * Valores en bruto tal cual los define `docs/design.md`. Único sitio del
+ * proyecto donde vive un literal de color.
  *
- * Los pasos intermedios (`ink150`, `ink450`, `ink550`, `ink750`, `gold700`,
- * `ember700`, `emerald700`, `mana700`) existen porque un par texto/fondo
- * concreto no alcanzaba el mínimo de contraste sin ellos, no por simetría de la
- * rampa. No los redondees a valores "más limpios" sin volver a pasar la
- * comprobación.
- *
- * Prefiere los tokens semánticos de `Colors` en los componentes. Alcanza aquí
- * solo cuando necesites paradas de un degradado o un brillo, que no tienen
- * token semántico.
+ * Prefiere los tokens semánticos de `Colors` en los componentes. Baja aquí
+ * solo para paradas de degradado (`Gradients`) o para config nativa que no
+ * puede importar TypeScript (`app.json`).
  */
 export const Palette = {
-  // Neutros con tinte índigo: superficies, texto y bordes.
-  ink50: '#F6F7FB',
-  ink100: '#ECEEF6',
-  ink150: '#E3E7F1',
-  ink200: '#D9DDEB',
-  ink300: '#B4BACF',
-  ink400: '#8A91AC',
-  ink450: '#767D9A',
-  ink500: '#646B87',
-  ink550: '#5A6178',
-  ink600: '#474D65',
-  ink700: '#2F3448',
-  ink750: '#232839',
-  ink800: '#1E2233',
-  ink900: '#141726',
-  ink950: '#0B0D18',
+  // Superficies: pila de elevación, de más hundida a más elevada.
+  void: '#05060A',
+  frame: '#08090C',
+  surface: '#101219',
+  card: '#13151C',
+  raised: '#1B1E27',
+  dock: 'rgba(17, 19, 26, 0.94)',
+  locked: '#0E1017',
 
-  // Amatista: color de marca. Acciones primarias y estado seleccionado.
-  amethyst100: '#F0E9FD',
-  amethyst200: '#DDD0FB',
-  amethyst300: '#C0A8F7',
-  amethyst400: '#A17DF0',
-  amethyst500: '#8558E4',
-  amethyst600: '#6B3FC9',
-  amethyst700: '#54309F',
-  amethyst900: '#241C3D',
+  // Power: el jugador, XP, acción primaria, tab activa.
+  power: '#C6FF4A',
+  /**
+   * El diseño original trae dos claros de marca (#E4FF95 y #E2FF8E) sin
+   * distinguir cuándo usar cada uno. `powerBright` es el que se usa por
+   * defecto; `powerBrightAlt` queda disponible sin token semántico hasta que
+   * se aclare su contexto. Ver docs/design.md § huecos.
+   */
+  powerBright: '#E4FF95',
+  powerBrightAlt: '#E2FF8E',
+  powerDeep: '#B4F02E',
+  powerMid: '#8CE03C',
+  powerFlash: '#EEFFB8',
+  onPower: '#0A0C05',
 
-  // Oro: experiencia y nivel.
-  gold200: '#FBEBB8',
-  gold300: '#F6D77A',
-  gold400: '#EFBE3C',
-  gold500: '#DDA119',
-  gold600: '#B57D0E',
-  gold700: '#8A5E06',
+  // Rival: el oponente, derrotas, avisos.
+  rival: '#FF5C38',
 
-  // Ascua: rachas y clase Vanguardia.
-  ember300: '#FCB08A',
-  ember400: '#F8834E',
-  ember500: '#EA5F22',
-  ember600: '#C24714',
-  ember700: '#AB3E11',
+  // Texto.
+  text: '#F1F2F6',
+  textSoft: '#B7BCC8',
+  /**
+   * El diseño original daba #767C8C: 3.99–4.48:1 sobre las superficies
+   * oscuras, por debajo del mínimo de 4.5:1 de WCAG AA. Aclarado al mínimo
+   * necesario para pasarlo (4.52–5.08:1); ver `pnpm check:contrast`.
+   */
+  textMuted: '#808594',
+  /** De-enfatizado a propósito: labels de sección, contenido bloqueado. */
+  textDim: '#4E545F',
+  navIdle: '#8A90A0',
 
-  // Esmeralda: duelo ganado y clase Explorador.
-  emerald300: '#7DE0AE',
-  emerald400: '#3CC98A',
-  emerald500: '#1BA96C',
-  emerald600: '#118455',
-  emerald700: '#0E7049',
+  // Bordes y contornos. Todos translúcidos.
+  hairline: 'rgba(255, 255, 255, 0.07)',
+  hairlineStrong: 'rgba(255, 255, 255, 0.14)',
+  powerEdge: 'rgba(198, 255, 74, 0.24)',
+  powerEdgeStrong: 'rgba(198, 255, 74, 0.40)',
+  rivalEdge: 'rgba(255, 92, 56, 0.24)',
 
-  // Carmesí: duelo perdido y acciones destructivas.
-  crimson300: '#F9A3A3',
-  crimson400: '#F26D6D',
-  crimson500: '#DE3F3F',
-  crimson600: '#B62C2C',
-
-  // Maná: información y clase Arcanista.
-  mana300: '#8FD8F5',
-  mana400: '#4FC3F0',
-  mana500: '#22A7DC',
-  mana600: '#1785B4',
-  mana700: '#126A8F',
-
-  white: '#FFFFFF',
-
-  // Velos de modal. Llevan alfa, así que no encajan en ninguna rampa.
-  scrimDark: 'rgba(11, 13, 24, 0.72)',
-  scrimLight: 'rgba(20, 23, 38, 0.48)',
+  /**
+   * Velo de modal. No está en la paleta original; deriva de `void` con el
+   * mismo patrón (negro casi puro + alfa) que ya usaba la app.
+   */
+  scrim: 'rgba(5, 6, 10, 0.72)',
 } as const;
 
 /**
- * Tokens semánticos por esquema de color. Un componente pide `surface`, nunca
- * `ink800`, para que la dirección visual cambie sin tocar los componentes.
+ * Paradas de degradado. Un degradado es un array, no un color único, así que
+ * no encaja como token de `Colors` — se pasa tal cual a un componente de
+ * degradado (p. ej. `expo-linear-gradient`).
+ */
+export const Gradients = {
+  /** Botón primario y elementos de marca. */
+  power: [Palette.powerDeep, Palette.powerBright],
+  /** Relleno de la barra de XP. */
+  xp: [Palette.powerMid, Palette.powerBright],
+} as const;
+
+/**
+ * Tokens semánticos. Un componente pide `surface`, nunca `Palette.card`,
+ * para que la dirección visual cambie sin tocar los componentes.
  *
- * Las cuatro superficies son una pila de elevación por rol, de hundido a
- * elevado: `surfaceSunken` (pozos: carril de XP, campos) → `background`
- * (lienzo de la app) → `surface` (tarjeta) → `surfaceRaised` (modal o chip
- * sobre tarjeta).
- *
- * El rol es común a los dos esquemas, pero la luminancia va al revés: en
- * oscuro elevar aclara, y en claro elevar oscurece un poco, porque el blanco
- * del lienzo ya es el techo. Todo token de texto cumple 4.5:1 sobre las
- * cuatro en ambos esquemas.
+ * ProofIt es de tema único, oscuro — no hay `Colors.light`. Se conserva la
+ * clave `dark` para no romper `Object.entries(Colors)` en
+ * `check-contrast.mjs` y para que añadir un tema claro en el futuro sea
+ * sumar una clave, no rediseñar el tipo `ThemeColor`.
  */
 export const Colors = {
-  light: {
-    text: Palette.ink900,
-    textSecondary: Palette.ink600,
-    textMuted: Palette.ink550,
+  dark: {
+    text: Palette.text,
+    textSecondary: Palette.textSoft,
+    textMuted: Palette.textMuted,
+    /** Labels de sección y contenido bloqueado. Contraste bajo a propósito. */
+    textDim: Palette.textDim,
+    /** Pestaña inactiva de la barra de navegación. */
+    navIdle: Palette.navIdle,
 
-    background: Palette.white,
-    surface: Palette.ink50,
-    surfaceRaised: Palette.ink100,
-    surfaceSunken: Palette.ink150,
+    background: Palette.frame,
+    surface: Palette.card,
+    surfaceRaised: Palette.raised,
+    surfaceSunken: Palette.surface,
+    /** Fondo de slot bloqueado (logro/ítem sin desbloquear). */
+    locked: Palette.locked,
+    /** Barra de navegación inferior. */
+    dock: Palette.dock,
 
-    border: Palette.ink200,
-    /** Contorno de control interactivo. Cumple el 3:1 de WCAG 1.4.11. */
-    borderStrong: Palette.ink450,
+    border: Palette.hairline,
+    /** Borde de botón secundario. */
+    borderStrong: Palette.hairlineStrong,
+    /** Borde de card destacada. */
+    primaryEdge: Palette.powerEdge,
+    /** Borde de card destacada + seleccionada. */
+    primaryEdgeStrong: Palette.powerEdgeStrong,
+    /** Borde de card de rival. */
+    rivalEdge: Palette.rivalEdge,
 
-    primary: Palette.amethyst600,
-    primarySolid: Palette.amethyst600,
-    onPrimary: Palette.white,
-    primarySurface: Palette.amethyst100,
+    primary: Palette.power,
+    primarySolid: Palette.powerDeep,
+    onPrimary: Palette.onPower,
 
     /** Texto y cifras de XP. */
-    xp: Palette.gold700,
-    /** Relleno de la barra de XP. Igual en ambos esquemas: es la marca de XP. */
-    xpSolid: Palette.gold400,
-    onXp: Palette.ink950,
-    /**
-     * Carril oscuro incluso en esquema claro. Con un carril claro el oro de XP
-     * se queda en 1.4:1 contra su propio relleno y la barra desaparece; la
-     * alternativa era oscurecer el oro y perder el mismo oro en ambos esquemas.
-     */
-    xpTrack: Palette.ink600,
+    xp: Palette.power,
+    /** Relleno (inicio) de la barra de XP. */
+    xpSolid: Palette.powerMid,
+    onXp: Palette.onPower,
+    xpTrack: Palette.locked,
 
-    streak: Palette.ember700,
-    victory: Palette.emerald700,
-    defeat: Palette.crimson600,
-    /** También cubre el duelo pendiente de aceptar. */
-    info: Palette.mana700,
+    /** Sin color propio en el diseño: reusa Power. Ver docs/design.md § huecos. */
+    streak: Palette.power,
+    /** Sin color propio: mismo caso que streak. */
+    victory: Palette.power,
+    defeat: Palette.rival,
+    /** Sin color propio: gris neutro de texto en vez de un tono de marca nuevo. */
+    info: Palette.textMuted,
 
-    overlay: Palette.scrimLight,
+    overlay: Palette.scrim,
 
-
-    // Heredados del scaffold de Expo. Los consumen los componentes de demo.
-    backgroundElement: Palette.ink100,
-    backgroundSelected: Palette.ink200,
-  },
-  dark: {
-    text: Palette.ink50,
-    textSecondary: Palette.ink300,
-    textMuted: Palette.ink400,
-
-    background: Palette.ink900,
-    surface: Palette.ink800,
-    surfaceRaised: Palette.ink750,
-    surfaceSunken: Palette.ink950,
-
-    border: Palette.ink700,
-    borderStrong: Palette.ink450,
-
-    primary: Palette.amethyst300,
-    primarySolid: Palette.amethyst600,
-    onPrimary: Palette.white,
-    primarySurface: Palette.amethyst900,
-
-    xp: Palette.gold300,
-    xpSolid: Palette.gold400,
-    onXp: Palette.ink950,
-    xpTrack: Palette.ink950,
-
-    streak: Palette.ember300,
-    victory: Palette.emerald300,
-    defeat: Palette.crimson300,
-    info: Palette.mana300,
-
-    overlay: Palette.scrimDark,
-
-
-    backgroundElement: Palette.ink800,
-    backgroundSelected: Palette.ink700,
+    // Heredados del scaffold de Expo, hoy con uso real: fondo/selección de
+    // los botones de la barra de tabs (`app-tabs.tsx`, `app-tabs.web.tsx`).
+    backgroundElement: Palette.surface,
+    backgroundSelected: Palette.raised,
   },
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors.dark;

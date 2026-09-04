@@ -36,7 +36,12 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
   **`docs/healthkit-y-health-connect.md`** — cómo funcionan las dos por dentro:
   permisos, límites de histórico y las trampas (en iOS un permiso denegado es
   indistinguible de cero pasos). Léelos antes de escribir código de pasos.
-- `.claude/skills/`: Skills de desarrollo y seguridad (anti-leaks, UI, Supabase).
+  **`docs/design.md`** — referencia autoritativa del sistema de diseño (paleta,
+  tokens semánticos, huecos pendientes). Contraparte legible de
+  `src/constants/colors.ts`. Léela antes de escribir cualquier color en un
+  componente; la skill `design-system` lo hace cumplir.
+- `.claude/skills/`: Skills de desarrollo y seguridad (anti-leaks, UI, Supabase,
+  sistema de diseño).
 
 ## Notas de implementación (estado actual)
 - **XP:** solo se gana al ganar un duelo (`floor(pasos_ganador / 10)`), no por
@@ -47,6 +52,9 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 - **Sin clases de personaje.** Se descartaron: el esquema ya eliminó el enum
   `user_class` y la columna `avatar_class`, y los tokens de color de clase se
   quitaron del sistema de diseño.
+- **Diseño: tema único, oscuro.** No hay modo claro (`Colors` en
+  `src/constants/colors.ts` no tiene `.light`). Paleta y reglas en
+  `docs/design.md`.
 - **Clanes:** un usuario pertenece como mucho a **un** clan (`UNIQUE` en
   `clan_members.user_id`). Roles `LEADER` / `OFFICER` / `MEMBER`. Toda mutación
   pasa por RPCs `SECURITY DEFINER` (`create_clan`, `request_to_join_clan`,

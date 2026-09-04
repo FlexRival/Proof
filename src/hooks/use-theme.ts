@@ -1,14 +1,10 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
+/**
+ * Sigue siendo un hook (no una constante) para que `ThemedText`/`ThemedView`
+ * no cambien si algún día vuelve un tema claro y esto pasa a leer
+ * `useColorScheme()` otra vez.
+ */
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
+  return Colors.dark;
 }
