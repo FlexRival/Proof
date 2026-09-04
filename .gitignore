@@ -43,3 +43,6 @@ example
 # generated native folders
 /ios
 /android
+
+# design screenshots (local only)
+capturadiseño/

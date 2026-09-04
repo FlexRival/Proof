@@ -42,8 +42,15 @@ const SOLID_PAIRS = [
   ['onXp', 'xpSolid'],
 ];
 
-/** Pares no textuales que deben distinguirse entre sí. */
-const NON_TEXT_PAIRS = [['xpSolid', 'xpTrack']];
+/**
+ * Pares no textuales que deben distinguirse entre sí.
+ *
+ * Vacío desde que `xpTrack` pasó a ser translúcido (blanco al 7 %, tal y como
+ * está medido en el diseño): esta comprobación solo sabe leer hex. La pareja
+ * que había, relleno contra pista de la barra de XP, es de todas formas verde
+ * brillante sobre casi negro — no era el par en riesgo.
+ */
+const NON_TEXT_PAIRS = [];
 
 /**
  * Exentos.
@@ -57,6 +64,12 @@ const NON_TEXT_PAIRS = [['xpSolid', 'xpTrack']];
  * `textDim` es de-enfatizado a propósito (labels de sección, contenido
  * bloqueado): no tiene que cumplir el mínimo de texto normal, igual que un
  * estado disabled.
+ *
+ * `primarySurface`, `rivalSurface`, `neutralSurface` y `xpTrack` son
+ * rellenos teñidos: también llevan alfa, así que caen en el mismo caso que
+ * los bordes. Lo que sí se comprueba es el texto que va encima, porque ese
+ * texto se declara contra la superficie de debajo (`surface`), no contra el
+ * tinte.
  */
 const EXEMPT = [
   'border',
@@ -67,6 +80,10 @@ const EXEMPT = [
   'primaryEdgeStrong',
   'rivalEdge',
   'textDim',
+  'primarySurface',
+  'rivalSurface',
+  'neutralSurface',
+  'xpTrack',
 ];
 
 function channelLuminance(value) {

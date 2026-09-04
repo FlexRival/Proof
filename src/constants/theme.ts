@@ -7,77 +7,69 @@
  * Guía de color: https://docs.expo.dev/guides/color-schemes/
  */
 
-import '@/global.css';
-
 import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 
 import { Palette } from '@/constants/colors';
+import { FontFamily } from '@/constants/fonts';
 
 export { Colors, Gradients, Palette, type ThemeColor } from '@/constants/colors';
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+export { FONT_ASSETS, FontFamily } from '@/constants/fonts';
 
 /**
- * Escala tipográfica. Solo métricas: el color lo pone el tema, para que una
- * misma variante sirva sobre cualquier superficie.
+ * Escala tipográfica. Métricas y familia: el color lo pone el tema, para que
+ * una misma variante sirva sobre cualquier superficie.
  *
- * `default`, `title`, `subtitle`, `small`, `smallBold`, `link` y `code`
- * conservan las métricas del scaffold de Expo para no alterar las pantallas de
- * demo que todavía las usan.
+ * La familia va en la variante y no en el componente porque en este diseño la
+ * familia *es* el peso: `FontFamily.display` (Chakra Petch 700) cubre cifras,
+ * títulos, mayúsculas y todo lo que iría en negrita; `body` / `bodyMedium`
+ * (Space Grotesk 400/500) cubren el resto. Por eso ninguna variante con
+ * familia de marca declara `fontWeight` — ver `constants/fonts.ts`.
  */
 export const Typography = {
   /** Cifra protagonista de la subida de nivel. */
-  display: { fontSize: 56, lineHeight: 58, fontWeight: 800, letterSpacing: -1 },
-  title: { fontSize: 48, lineHeight: 52, fontWeight: 600 },
-  subtitle: { fontSize: 32, lineHeight: 44, fontWeight: 600 },
-  heading: { fontSize: 24, lineHeight: 30, fontWeight: 700 },
-  subheading: { fontSize: 20, lineHeight: 26, fontWeight: 600 },
-  default: { fontSize: 16, lineHeight: 24, fontWeight: 500 },
-  bodyBold: { fontSize: 16, lineHeight: 24, fontWeight: 700 },
-  small: { fontSize: 14, lineHeight: 20, fontWeight: 500 },
-  smallBold: { fontSize: 14, lineHeight: 20, fontWeight: 700 },
-  caption: { fontSize: 12, lineHeight: 16, fontWeight: 600 },
-  /** Rótulos cortos en mayúsculas: NIVEL, XP, RACHA. */
-  label: { fontSize: 11, lineHeight: 14, fontWeight: 700, letterSpacing: 0.8 },
+  display: {
+    fontFamily: FontFamily.display,
+    fontSize: 56,
+    lineHeight: 58,
+    letterSpacing: -1,
+  },
+  title: { fontFamily: FontFamily.display, fontSize: 48, lineHeight: 52 },
+  subtitle: { fontFamily: FontFamily.display, fontSize: 32, lineHeight: 44 },
+  heading: { fontFamily: FontFamily.display, fontSize: 24, lineHeight: 30 },
+  subheading: { fontFamily: FontFamily.display, fontSize: 20, lineHeight: 26 },
+  default: { fontFamily: FontFamily.body, fontSize: 16, lineHeight: 24 },
+  /** Énfasis dentro del cuerpo: sube de familia, no de peso. */
+  bodyBold: { fontFamily: FontFamily.display, fontSize: 16, lineHeight: 24 },
+  small: { fontFamily: FontFamily.bodyMedium, fontSize: 14, lineHeight: 20 },
+  smallBold: { fontFamily: FontFamily.display, fontSize: 14, lineHeight: 20 },
+  caption: { fontFamily: FontFamily.bodyMedium, fontSize: 12, lineHeight: 16 },
+  /** Rótulos de sección en mayúsculas: SURFACES & ACCENTS, XP PROGRESS. */
+  label: {
+    fontFamily: FontFamily.bodyMedium,
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.8,
+  },
+  /** Label de botón: mayúsculas y espaciado ancho. */
+  button: {
+    fontFamily: FontFamily.display,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: 1.2,
+  },
   /**
    * Contadores. `tabular-nums` fija el ancho de los dígitos para que los pasos
    * y el XP no bailen mientras se animan.
    */
   numeric: {
+    fontFamily: FontFamily.display,
     fontSize: 20,
     lineHeight: 24,
-    fontWeight: 700,
     fontVariant: ['tabular-nums'],
   },
-  link: { fontSize: 14, lineHeight: 30, fontWeight: 500 },
-  code: {
-    fontSize: 12,
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
-  },
+  link: { fontFamily: FontFamily.bodyMedium, fontSize: 14, lineHeight: 30 },
+  /** Solo la fórmula de XP de la card de regla del juego. */
+  code: { fontFamily: FontFamily.mono, fontSize: 12, lineHeight: 18 },
 } as const satisfies Record<string, TextStyle>;
 
 export type TypographyVariant = keyof typeof Typography;

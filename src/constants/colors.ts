@@ -69,6 +69,16 @@ export const Palette = {
   rivalEdge: 'rgba(255, 92, 56, 0.24)',
 
   /**
+   * Rellenos teñidos. Medidos sobre la lámina de componentes del diseño: un
+   * chip no va sobre `card` a pelo, lleva encima una capa de marca al 12 %
+   * (o de blanco al 5 % si es neutro). Sobre `card` dan `#293122`,
+   * `#301D20` y `#1F2128`, que es justo lo que hay medido en el diseño.
+   */
+  powerTint: 'rgba(198, 255, 74, 0.12)',
+  rivalTint: 'rgba(255, 92, 56, 0.12)',
+  neutralTint: 'rgba(255, 255, 255, 0.05)',
+
+  /**
    * Velo de modal. No está en la paleta original; deriva de `void` con el
    * mismo patrón (negro casi puro + alfa) que ya usaba la app.
    */
@@ -83,8 +93,12 @@ export const Palette = {
 export const Gradients = {
   /** Botón primario y elementos de marca. */
   power: [Palette.powerDeep, Palette.powerBright],
-  /** Relleno de la barra de XP. */
-  xp: [Palette.powerMid, Palette.powerBright],
+  /**
+   * Relleno de la barra de XP. Medido en el diseño (#8DE03C → #C3FE49 a lo
+   * ancho de la barra): arranca en Power Mid y termina en Power, no en Power
+   * Bright.
+   */
+  xp: [Palette.powerMid, Palette.power],
 } as const;
 
 /**
@@ -112,6 +126,12 @@ export const Colors = {
     surfaceSunken: Palette.surface,
     /** Fondo de slot bloqueado (logro/ítem sin desbloquear). */
     locked: Palette.locked,
+    /** Relleno de chip de marca (`LV 12`). */
+    primarySurface: Palette.powerTint,
+    /** Relleno de chip de rival (racha). */
+    rivalSurface: Palette.rivalTint,
+    /** Relleno de chip neutro (`● Online`). */
+    neutralSurface: Palette.neutralTint,
     /** Barra de navegación inferior. */
     dock: Palette.dock,
 
@@ -134,10 +154,17 @@ export const Colors = {
     /** Relleno (inicio) de la barra de XP. */
     xpSolid: Palette.powerMid,
     onXp: Palette.onPower,
-    xpTrack: Palette.locked,
+    /**
+     * Pista de la barra de XP. Medida en el diseño como blanco al 7 % sobre
+     * la superficie, no como un gris opaco: mismo valor que `border`.
+     */
+    xpTrack: Palette.hairline,
 
-    /** Sin color propio en el diseño: reusa Power. Ver docs/design.md § huecos. */
-    streak: Palette.power,
+    /**
+     * Racha. Medido en el diseño: el chip `🔥 9` va con relleno y texto
+     * Rival, no Power como se supuso antes de tener las capturas.
+     */
+    streak: Palette.rival,
     /** Sin color propio: mismo caso que streak. */
     victory: Palette.power,
     defeat: Palette.rival,

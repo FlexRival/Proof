@@ -54,6 +54,7 @@ Pila de elevación, de más hundida a más elevada.
 | Raised             | `surfaceRaised`                 | `#1B1E27`                 | Card elevada / seleccionada. |
 | Dock               | `dock`                          | `rgba(17, 19, 26, 0.94)`  | Barra de navegación inferior. |
 | Locked             | `locked`                        | `#0E1017`                 | Fondo de slot bloqueado (logro/ítem sin desbloquear). |
+| Pista de XP        | `xpTrack`                       | `rgba(255, 255, 255, 0.07)` | Parte vacía de la barra de XP. **Medida** como blanco al 7 % sobre la superficie (mismo valor que `border`), no como un gris opaco. |
 
 `backgroundElement` / `backgroundSelected` son tokens heredados del scaffold
 de Expo, hoy con uso real: fondo/selección de los botones de la barra de
@@ -61,6 +62,21 @@ tabs (`app-tabs.tsx`, `app-tabs.web.tsx`). Mapeados a `surfaceSunken` y
 `surfaceRaised` respectivamente. Cuando se rediseñe la barra de tabs con su
 propio lenguaje visual (Power como indicador de tab activa, ver más abajo),
 es razonable que estos dos tokens cambien o desaparezcan.
+
+### Superficies teñidas
+
+Un chip no va sobre `surface` a pelo: lleva encima una capa de color de
+marca. Los valores están **medidos píxel a píxel sobre la lámina de
+componentes**, no elegidos a ojo.
+
+| Rol            | Token (`Colors`)   | Valor                         | Sobre `surface` da |
+|-----------------|---------------------|--------------------------------|--------------------|
+| Power tint       | `primarySurface`    | `rgba(198, 255, 74, 0.12)`    | `#293122` — chip `LV 12` |
+| Rival tint       | `rivalSurface`      | `rgba(255, 92, 56, 0.12)`     | `#301D20` — chip de racha |
+| Neutral tint     | `neutralSurface`    | `rgba(255, 255, 255, 0.05)`   | `#1F2128` — chip `● Online` |
+
+Esto cierra el hueco de `primarySurface` que este documento tenía abierto:
+ya no hay que inventarlo, está medido.
 
 ## Acentos
 
@@ -80,14 +96,14 @@ es razonable que estos dos tokens cambien o desaparezcan.
 No son un token de `Colors` (un color de fondo/texto es un string; un
 degradado es un array de paradas). Viven en `Gradients`, en `colors.ts`:
 
-- `Gradients.power = [powerDeep, powerBright]` — botón primario y elementos
-  de marca.
-- `Gradients.xp = [powerMid, powerBright]` — relleno de la barra de XP.
-
-Ambos son mi interpretación de "extremo claro / extremo oscuro del
-degradado" + "inicio de las barras de XP"; el diseño original no dice
-explícitamente en qué dirección va cada uno ni dónde termina el de XP.
-Corrige `colors.ts` si no es así.
+- `Gradients.xp = [powerMid, power]` — relleno de la barra de XP, en
+  horizontal (izquierda → derecha). **Medido**: la barra va de `#8DE03C` a
+  `#C3FE49`, es decir Power Mid → Power. No termina en Power Bright, como se
+  supuso antes de tener las capturas.
+- `Gradients.power = [powerDeep, powerBright]` — **sin consumidor**. Se
+  mantiene porque venía de la paleta original, pero el botón primario del
+  diseño es **plano**: medido da `#C6FF4A` idéntico arriba, en medio y abajo.
+  Si acaba sin usarse en ninguna pantalla, bórralo.
 
 ## Texto
 
@@ -95,7 +111,7 @@ Corrige `colors.ts` si no es así.
 |---------------|--------------------|------------|-----|
 | Text            | `text`              | `#F1F2F6`  | Primario. |
 | Text Soft       | `textSecondary`     | `#B7BCC8`  | Nombres secundarios. |
-| Text Muted      | `textMuted`, `info` | `#767C8C`  | Labels, metadatos. También cubre "info / duelo pendiente" — ver huecos. |
+| Text Muted      | `textMuted`, `info` | `#808594`  | Labels, metadatos. También cubre "info / duelo pendiente" — ver huecos. |
 | Text Dim        | `textDim`           | `#4E545F`  | Labels de sección, contenido bloqueado. Contraste bajo a propósito. |
 | Nav Idle        | `navIdle`           | `#8A90A0`  | Pestaña inactiva de la barra de navegación. |
 
@@ -118,24 +134,116 @@ interactivo". La afordancia de un botón tiene que venir del relleno o del
 label, no del borde. El check de "borde interactivo" que existía en
 `check-contrast.mjs` se quitó por esto — ver el propio script.
 
+## Tipografía
+
+Dos familias y nada más. Se cargan con `expo-font` desde
+`src/constants/fonts.ts` y se declaran variante a variante en `Typography`
+(`src/constants/theme.ts`).
+
+| Familia            | Token (`FontFamily`) | Archivo                   | Uso |
+|--------------------|----------------------|---------------------------|-----|
+| Chakra Petch 700    | `display`            | `ChakraPetch_700Bold`      | Cifras, niveles, títulos, labels de botón. |
+| Space Grotesk 400   | `body`               | `SpaceGrotesk_400Regular`  | Texto corrido. |
+| Space Grotesk 500   | `bodyMedium`         | `SpaceGrotesk_500Medium`   | Texto de interfaz, labels, metadatos. |
+| Mono del sistema    | `mono`               | —                         | Solo la fórmula `XP = floor(steps / 10)`. |
+
+**En este diseño la familia es el peso.** No hay Space Grotesk Bold: lo que en
+otro sistema sería «poner esto en negrita» aquí es «subir esto a Chakra Petch
+700». Por eso ninguna variante con familia de marca declara `fontWeight`:
+declararlo haría que Android sintetizara una negrita falsa encima de un
+archivo que ya es Bold.
+
+### Escala (`Typography`)
+
+| Variante      | Familia     | Tamaño / interlineado   | Uso |
+|---------------|-------------|-------------------------|-----|
+| `display`     | Chakra 700  | 56 / 58, -1 tracking    | Cifra protagonista del level up. |
+| `title`       | Chakra 700  | 48 / 52                 | Título de pantalla (`DUELS`, `FRIENDS`). |
+| `subtitle`    | Chakra 700  | 32 / 44                 | Titular de onboarding. |
+| `heading`     | Chakra 700  | 24 / 30                 | `LEVEL 12`, `YOU WIN`. |
+| `subheading`  | Chakra 700  | 20 / 26                 | Cabecera de bloque. |
+| `numeric`     | Chakra 700  | 20 / 24                 | Contadores (`tabular-nums`: los dígitos no bailan al animarse). |
+| `bodyBold`    | Chakra 700  | 16 / 24                 | Énfasis dentro del cuerpo. |
+| `smallBold`   | Chakra 700  | 14 / 20                 | Énfasis en texto pequeño. |
+| `button`      | Chakra 700  | 15 / 20, +1.2 tracking  | Label de botón, siempre en mayúsculas. |
+| `default`     | Grotesk 400 | 16 / 24                 | Texto corrido. |
+| `small`       | Grotesk 500 | 14 / 20                 | Texto secundario de card. |
+| `caption`     | Grotesk 500 | 12 / 16                 | Metadatos, label de chip. |
+| `label`       | Grotesk 500 | 11 / 14, +0.8 tracking  | Rótulos de sección en mayúsculas (`XP PROGRESS`). |
+| `link`        | Grotesk 500 | 14 / 30                 | Enlaces de texto (`Skip`). |
+| `code`        | Mono        | 12 / 18                 | Fórmula de XP. |
+
+Las fuentes se cargan una sola vez, en `src/app/_layout.tsx`: el layout raíz
+no pinta nada hasta que están listas, y como el splash nativo sigue delante no
+se ve ningún hueco. Si la carga falla, la app se pinta con la fuente del
+sistema y lo avisa por consola en vez de quedarse en negro para siempre.
+
+## Primitivos
+
+Los componentes de la card COMPONENTS del diseño, en `src/components/`. Una
+pantalla debería poder montarse con estos sin volver a escribir a mano un
+`borderRadius` ni un `borderColor`.
+
+| Componente          | Archivo                   | Variantes |
+|---------------------|---------------------------|-----------|
+| `Button`            | `button.tsx`              | `primary` (degradado Power), `secondary` (contorno), `ghost` |
+| `Card`              | `card.tsx`                | `default`, `raised`, `sunken`, `highlight`, `rival`, `locked` |
+| `Chip`              | `chip.tsx`                | `neutral`, `primary`, `rival`, con punto de estado opcional |
+| `SegmentedControl`  | `segmented-control.tsx`   | Filtro de pantalla (ACTIVE / PENDING / HISTORY), controlado |
+| `Notice`            | `notice.tsx`              | `primary`, `rival`, `info` |
+| `XpBar`             | `xp-bar.tsx`              | Rótulo + `2,450 / 3,000` + pista con degradado XP |
+
+Superficies medidas en la lámina, por si se rehacen estos componentes:
+`Notice` y el segmento activo de `SegmentedControl` van sobre `#1B1E27`
+(`surfaceRaised`); la pista del `SegmentedControl` va sobre `#08090C`
+(`background`), no sobre `surfaceSunken`.
+
+Los labels de `Button` van en mayúsculas siempre: es lo que hace la variante
+`button` de la escala y el diseño no tiene ni un botón en minúsculas. El
+`Skip` en minúscula del onboarding es un enlace (`link`), no un botón.
+
+`XpBar` recibe `value` / `max` ya calculados, no el XP total: la aritmética
+de nivel vive solo en `levelProgress()` (`src/lib/xp.ts`), que espeja el SQL.
+El relleno se anima con `Motion.duration.base` cuando el valor cambia.
+
+Todavía no es primitivo el render del avatar (KAN-19).
+
 ## Huecos y decisiones que tomé sin dato explícito
 
-El diseño original no cubre estos casos. Elegí lo siguiente; corrígeme si
-está mal:
+### Cerrados midiendo las capturas (2026-09-04)
 
-- **`streak` (racha)** y **`victory` (duelo ganado)** → reusan `Power`. No
-  había color dedicado; ambos son "cosas buenas que le pasan al jugador",
-  igual que Power ya representa "tú, XP".
+No hizo falta inventar nada: los valores salen de muestrear los píxeles de
+`capturadiseño/` (carpeta local, fuera de git).
+
+- **`streak` (racha)** → **Rival**, no Power. El chip `🔥 9` va con relleno
+  Rival al 12 % y texto `#FF5C33`.
+- **`primarySurface`** → existe, `rgba(198, 255, 74, 0.12)`, más sus
+  hermanos `rivalSurface` y `neutralSurface`. Ver § Superficies teñidas.
+- **Final del degradado de XP** → Power, no Power Bright.
+- **Dirección del degradado de XP** → horizontal, izquierda a derecha.
+- **Botón primario** → plano, sin degradado.
+- **`xpTrack`** → blanco al 7 %, no `locked`.
+- **Fondo de pantalla** → `#08090C` (`Frame`) confirmado dentro de los
+  mockups de móvil. El `#05060A` que se ve alrededor es el lienzo de la
+  lámina, no la app.
+
+### Siguen abiertos
+
+- **`victory` (duelo ganado)** → reusa `Power`. La pantalla de victoria del
+  diseño es toda verde, así que encaja, pero no hay un token dedicado.
 - **`info` (duelo pendiente / informativo)** → reusa `Text Muted`, un gris
   neutro, en vez de inventar un color de marca nuevo.
 - **`overlay` (velo de modal)** → `rgba(5, 6, 10, 0.72)`, derivado de
-  `Void`. No estaba en la paleta que diste; sigue el mismo patrón (negro
-  casi puro + alfa) que ya usaba la app.
-- **`primarySurface`** (superficie teñida de marca, p. ej. fondo de un chip)
-  no existe todavía. La versión anterior del sistema sí lo tenía; esta no
-  trae un tinte opaco equivalente, así que lo quité en vez de inventar uno.
-  Si en algún momento hace falta un fondo tintado de Power, dame el valor y
-  lo añado.
+  `Void`. No sale en ninguna captura; sigue el patrón que ya usaba la app.
+- **Cómo se llama `#08090C`** — la lámina lo etiqueta `VOID`; aquí `Void`
+  es `#05060A` y `#08090C` es `Frame`. Los valores no chocan, los nombres
+  sí.
+- **Fondo del icono adaptativo de Android** — `app.json` sigue con
+  `#E6F4FE`, el azul claro del scaffold de Expo, que no está en la paleta y
+  no aparece en ninguna captura. **Hace falta el valor de marca.**
+- **Textura rayada del avatar** — el placeholder del personaje son rayas
+  diagonales (medidas: base `#181C1D`, raya `#2C3622`). No es un token de
+  color, es un patrón; se resuelve en KAN-19.
 - **Power Bright vs Power Bright (alt)** — ver tabla de Acentos.
 
 ## Ejemplo de uso en un componente
