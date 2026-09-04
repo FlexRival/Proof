@@ -78,5 +78,12 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 - **Estado de migraciones:** las 2 migraciones de clanes
   (`20260903150000_clans.sql`, `20260903150500_clan_wars.sql`) aún no se han
   hecho `supabase db push` al proyecto vinculado.
-- **Pendiente conocido:** no hay job programado que cierre duelos ni guerras
-  vencidas; alguien debe llamar a `resolve_duel` / `resolve_clan_war`.
+- **Cierre automático de duelos/guerras:** la Edge Function
+  `supabase/functions/resolve-expired-competitions/` + un cron de `pg_cron`
+  (migración `20260904090000_resolve_expired_competitions_cron.sql`) llaman a
+  `resolve_duel` / `resolve_clan_war` cada hora para todo lo vencido — así el
+  XP se calcula solo sin depender de que un jugador abra la app. Ver
+  `supabase/SCHEMA.md` §12. Requiere dar de alta a mano dos secretos en
+  Supabase Vault (`project_url`, `service_role_key`) antes de que el cron
+  funcione; no se puede validar contra el Postgres efímero (PGlite) que se usa
+  para las demás migraciones.
