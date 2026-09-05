@@ -1,5 +1,5 @@
 import { RepositoryCache } from '@/repositories/cache';
-import type { Profile, ProfileRepository } from '@/repositories/profile-repository';
+import type { PickedImage, Profile, ProfileRepository } from '@/repositories/profile-repository';
 
 /**
  * Envuelve cualquier `ProfileRepository` (hoy `SupabaseProfileRepository`,
@@ -36,5 +36,35 @@ export class CachedProfileRepository implements ProfileRepository {
 
   onSessionChange(listener: () => void): () => void {
     return this.inner.onSessionChange(listener);
+  }
+
+  // Mutaciones: sin caché, y el cambio de sesión que disparan ya invalida el
+  // caché de `getCurrentProfile()` solo, vía la suscripción del constructor.
+  signInWithPassword(email: string, password: string): Promise<void> {
+    return this.inner.signInWithPassword(email, password);
+  }
+
+  signUp(
+    email: string,
+    password: string,
+    username: string,
+  ): ReturnType<ProfileRepository['signUp']> {
+    return this.inner.signUp(email, password, username);
+  }
+
+  signOut(): Promise<void> {
+    return this.inner.signOut();
+  }
+
+  /**
+   * Esta sí toca el caché explícitamente: a diferencia de las de arriba, no
+   * dispara `onAuthStateChange` (no cambia la sesión), así que sin esto
+   * `getCurrentProfile()` seguiría devolviendo la foto vieja hasta que
+   * caducase el caché por su cuenta.
+   */
+  async updateAvatar(image: PickedImage): Promise<Profile> {
+    const profile = await this.inner.updateAvatar(image);
+    this.cache.invalidate();
+    return profile;
   }
 }

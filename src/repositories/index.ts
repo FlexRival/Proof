@@ -18,7 +18,7 @@ import type { ProfileRepository } from '@/repositories/profile-repository';
 import { SupabaseCosmeticsRepository } from '@/repositories/supabase/cosmetics-repository';
 import { SupabaseProfileRepository } from '@/repositories/supabase/profile-repository';
 
-export type { Profile, ProfileRepository } from '@/repositories/profile-repository';
+export type { PickedImage, Profile, ProfileRepository } from '@/repositories/profile-repository';
 export type {
   CosmeticItem,
   CosmeticsRepository,

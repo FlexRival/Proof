@@ -59,9 +59,17 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
   niveles, títulos, botones) y **Space Grotesk 400/500** (cuerpo y labels).
   La familia es el peso: no hay Space Grotesk Bold, lo que sería negrita sube
   a Chakra. Se cargan en `src/app/_layout.tsx` desde `src/constants/fonts.ts`.
-- **Primitivos de UI:** `Button`, `Card`, `Chip`, `SegmentedControl`, `XpBar` y
-  `Notice` en `src/components/`. Monta las pantallas con ellos antes de
-  escribir un `borderRadius` a mano.
+- **Primitivos de UI:** `Button`, `Card`, `Chip`, `SegmentedControl`, `XpBar`,
+  `Notice`, `SearchField` (filtro de listas) y `TextField` (campo de
+  formulario genérico: login, altas) en `src/components/`. Monta las
+  pantallas con ellos antes de escribir un `borderRadius` a mano.
+- **Autenticación:** email/contraseña vía Supabase Auth
+  (`src/app/login.tsx`), sin proveedores OAuth configurados todavía.
+  `src/app/_layout.tsx` usa `Stack.Protected` para mostrar `login` o el
+  resto de la app según haya sesión — nunca `router.replace` a mano tras un
+  login/logout, el guard reacciona solo a `onAuthStateChange` vía
+  `useProfile()`. `ProfileRepository` expone `signInWithPassword`/`signUp`/
+  `signOut`; ninguna pantalla llama a `supabase.auth` directamente.
 - **Clanes:** un usuario pertenece como mucho a **un** clan (`UNIQUE` en
   `clan_members.user_id`). Roles `LEADER` / `OFFICER` / `MEMBER`. Toda mutación
   pasa por RPCs `SECURITY DEFINER` (`create_clan`, `request_to_join_clan`,

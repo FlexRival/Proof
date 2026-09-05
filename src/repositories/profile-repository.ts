@@ -11,8 +11,20 @@ export type Profile = {
   xp: number;
   streakDays: number;
   isPro: boolean;
+  /** `null` si el usuario nunca subió una foto de perfil. */
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/**
+ * Una imagen ya elegida por el usuario (de `expo-image-picker` u otro
+ * selector), en la forma mínima que cualquier backend necesita para
+ * guardarla: no acopla el contrato a un tipo de una librería concreta.
+ */
+export type PickedImage = {
+  base64: string;
+  mimeType: string;
 };
 
 export interface ProfileRepository {
@@ -24,4 +36,28 @@ export interface ProfileRepository {
    * Devuelve la función para cancelar la suscripción.
    */
   onSessionChange(listener: () => void): () => void;
+
+  /** Inicia sesión con email/contraseña. Lanza `RepositoryError` si falla. */
+  signInWithPassword(email: string, password: string): Promise<void>;
+
+  /**
+   * Crea una cuenta nueva. Si el proyecto exige confirmar el email antes de
+   * abrir sesión, `needsEmailConfirmation` viene en `true` y todavía no hay
+   * sesión — la pantalla debe avisarlo en vez de asumir que ya se puede
+   * entrar.
+   */
+  signUp(
+    email: string,
+    password: string,
+    username: string,
+  ): Promise<{ needsEmailConfirmation: boolean }>;
+
+  /** Cierra la sesión actual. */
+  signOut(): Promise<void>;
+
+  /**
+   * Sube una foto de perfil nueva y actualiza `avatarUrl` en el perfil del
+   * usuario de la sesión actual. Devuelve el perfil ya actualizado.
+   */
+  updateAvatar(image: PickedImage): Promise<Profile>;
 }

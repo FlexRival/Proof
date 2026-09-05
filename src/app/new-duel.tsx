@@ -11,8 +11,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
-import { demoLevelProgress, FRIENDS, HOME_DEMO, type Friend } from '@/lib/demo-data';
+import { FRIENDS, type Friend } from '@/lib/demo-data';
+import { levelProgress } from '@/lib/xp';
+import type { Profile } from '@/repositories';
 
 /**
  * Crear un duelo. Sigue a `capturadiseño/Captura7.png`.
@@ -37,6 +40,8 @@ export default function NewDuelScreen() {
   const [step, setStep] = useState<WizardStep>(preset ? 2 : 1);
   const [opponent, setOpponent] = useState<Friend | null>(preset);
   const [duration, setDuration] = useState<DuelDuration>(DEFAULT_DURATION);
+
+  const { state: profileState } = useProfile();
 
   function goBack() {
     if (step === 1) {
@@ -80,8 +85,12 @@ export default function NewDuelScreen() {
               />
             ) : null}
 
-            {step === 3 && opponent ? (
-              <ConfirmStep opponent={opponent} duration={duration} />
+            {step === 3 && opponent && profileState.status === 'ready' ? (
+              <ConfirmStep
+                you={profileState.data}
+                opponent={opponent}
+                duration={duration}
+              />
             ) : null}
           </ScrollView>
 
@@ -175,21 +184,29 @@ function ChooseFriendStep({ selected, onSelect }: ChooseFriendStepProps) {
     <>
       <ThemedText type="title">{'CHOOSE\nA FRIEND'}</ThemedText>
 
-      <SearchField value={query} onChange={setQuery} />
-
-      {visible.length > 0 ? (
-        visible.map((friend) => (
-          <FriendOption
-            key={friend.username}
-            friend={friend}
-            selected={friend.username === selected?.username}
-            onSelect={() => onSelect(friend)}
-          />
-        ))
-      ) : (
+      {FRIENDS.length === 0 ? (
         <ThemedText type="small" themeColor="textDim" style={styles.empty}>
-          No friends match that search.
+          Add a friend first to challenge them to a duel.
         </ThemedText>
+      ) : (
+        <>
+          <SearchField value={query} onChange={setQuery} />
+
+          {visible.length > 0 ? (
+            visible.map((friend) => (
+              <FriendOption
+                key={friend.username}
+                friend={friend}
+                selected={friend.username === selected?.username}
+                onSelect={() => onSelect(friend)}
+              />
+            ))
+          ) : (
+            <ThemedText type="small" themeColor="textDim" style={styles.empty}>
+              No friends match that search.
+            </ThemedText>
+          )}
+        </>
       )}
     </>
   );
@@ -337,8 +354,14 @@ function DurationOption({ days, selected, onSelect }: DurationOptionProps) {
   );
 }
 
-function ConfirmStep({ opponent, duration }: { opponent: Friend; duration: DuelDuration }) {
-  const { level } = demoLevelProgress();
+type ConfirmStepProps = {
+  you: Profile;
+  opponent: Friend;
+  duration: DuelDuration;
+};
+
+function ConfirmStep({ you, opponent, duration }: ConfirmStepProps) {
+  const { level } = levelProgress(you.xp);
 
   return (
     <>
@@ -352,7 +375,7 @@ function ConfirmStep({ opponent, duration }: { opponent: Friend; duration: DuelD
       </View>
 
       <View style={styles.versus}>
-        <Fighter variant="highlight" username={HOME_DEMO.username} level={level} />
+        <Fighter variant="highlight" username={you.username} level={level} />
 
         <ThemedText type="heading">VS</ThemedText>
 

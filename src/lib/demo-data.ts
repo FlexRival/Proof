@@ -11,10 +11,20 @@ import { levelProgress, type LevelProgress } from '@/lib/xp';
  * A qué se conectará cada campo:
  * - `username`, `rank`, `xp`, `streak` → `profileRepository.getCurrentProfile()`,
  *   que ya existe (`src/repositories/profile-repository.ts`).
- * - `steps`, `stepGoal`, `totalSteps` → todavía no hay origen. La captura de
- *   pasos no está decidida: ver `docs/conteo-de-pasos.md` (HealthKit + Health
- *   Connect, exige development build).
- * - `duel`, `wins`, `losses` → pendientes de un `duel-repository.ts`.
+ * - `steps`, `totalSteps` → `0`, no inventados: no hay HealthKit/Health
+ *   Connect conectado (ver `docs/conteo-de-pasos.md`), así que no hay ningún
+ *   paso real que contar todavía. `stepGoal`/`dailyStepGoal` sí quedan con un
+ *   valor (10.000): es un objetivo configurable, no una medición — tiene
+ *   sentido enseñarlo antes de que exista tracking, igual que cualquier app de
+ *   fitness deja fijar una meta antes de conectar un dispositivo.
+ * - `duel`, `wins`, `losses`, `ACTIVE_DUELS`, `INCOMING_DUELS`,
+ *   `OUTGOING_DUELS` → pendientes de un `duel-repository.ts`. Van vacíos/`null`
+ *   (no con números inventados) para que las pantallas muestren su estado
+ *   vacío real en vez de duelos que no existen.
+ * - `FRIEND_REQUESTS`, `FRIENDS`, `FRIEND_PROFILES` → pendientes de un
+ *   `friendship-repository.ts` que envuelva las RPC de amistades, que ya
+ *   existen (`supabase/SCHEMA.md` §13). Mismo criterio: vacíos, no
+ *   inventados.
  */
 export type DuelSide = {
   name: string;
@@ -47,43 +57,36 @@ export type ProfileData = {
   xp: number;
   wins: number;
   losses: number;
-  streak: number;
   totalSteps: number;
 };
 
 /**
- * Cifras tomadas de `capturadiseño/Captura3.png`, salvo el XP: la captura dice
- * `2,450 / 3,000`, pero la regla real del juego son 1.000 XP por nivel
- * (`XP_PER_LEVEL`, que espeja el SQL). 11.450 da nivel 12 con 550 para el 13,
- * que es justo lo que rotula el diseño.
+ * `duel: null` porque no hay `duel-repository.ts` todavía: sin él no hay
+ * ningún duelo real que enseñar, así que la pantalla cae sola en su estado
+ * de "sin duelos" (`NoDuelState`) en vez de fingir uno.
  */
 export const HOME_DEMO: HomeData = {
   username: '@marcodev',
   rank: 'CHALLENGER',
   xp: 11450,
-  steps: 8742,
+  steps: 0,
   stepGoal: 10000,
-  duel: {
-    endsIn: '2D 10H LEFT',
-    you: { name: 'YOU', steps: 8742 },
-    rival: { name: 'ALEX', steps: 7931 },
-  },
+  duel: null,
 };
 
 /**
- * Cifras de `capturadiseño/Captura12.png`. Son coherentes entre sí, así que se
- * conservan tal cual: 28 victorias + 18 derrotas = 46 duelos, y 28/46 da el
- * 61 % que rotula la captura — por eso la pantalla deriva duelos y porcentaje
- * en vez de guardarlos repetidos aquí.
+ * `wins`/`losses`/`totalSteps` en `0`: sin `duel-repository.ts` ni agregación
+ * de `step_logs` no hay ninguno de verdad, y dejar los números de la captura
+ * (28/18/1.42M) al lado de un `duel: null` de arriba sería contradictorio —
+ * una cuenta sin duelos no puede tener victorias.
  */
 export const PROFILE_DEMO: ProfileData = {
   username: HOME_DEMO.username,
   rank: HOME_DEMO.rank,
   xp: HOME_DEMO.xp,
-  wins: 28,
-  losses: 18,
-  streak: 9,
-  totalSteps: 1420000,
+  wins: 0,
+  losses: 0,
+  totalSteps: 0,
 };
 
 /** Progreso de nivel de los datos de demostración, con la aritmética real. */
@@ -91,14 +94,6 @@ export function demoLevelProgress(): LevelProgress {
   return levelProgress(HOME_DEMO.xp);
 }
 
-/**
- * Duelos de demostración, de `capturadiseño/Captura5.png` (activos) y
- * `Captura6.png` (pendientes).
- *
- * Los nombres de usuario salen de esas capturas. A ese tamaño alguno es
- * difícil de leer letra a letra; son contenido de relleno, no copy de
- * producto, así que no pasa nada si alguno no es exacto.
- */
 export type ActiveDuel = {
   opponent: string;
   yourSteps: number;
@@ -114,39 +109,16 @@ export type PendingDuel = {
   note: string;
 };
 
-export const FEATURED_DUEL: ActiveDuel = {
-  opponent: '@alexruiz',
-  yourSteps: 8742,
-  theirSteps: 7931,
-  endsIn: '2 DAYS LEFT',
-};
-
 /**
- * Las diferencias cuadran con lo que rotula la captura: 7.306 − 6.102 = 1.204
- * («BEHIND 1,204») y 4.908 − 4.488 = 420 («AHEAD 420»), así que la pantalla
- * calcula la ventaja en vez de guardarla repetida.
+ * Sin `duel-repository.ts` no hay duelos de verdad: todo esto va vacío para
+ * que la pantalla de Duelos muestre sus estados vacíos reales en vez de un
+ * cara a cara inventado.
  */
-export const ACTIVE_DUELS: ActiveDuel[] = [
-  { opponent: '@sofia_r', yourSteps: 6102, theirSteps: 7306, endsIn: '9H LEFT' },
-  { opponent: '@luoji', yourSteps: 4908, theirSteps: 4488, endsIn: '1D 3H LEFT' },
-];
+export const FEATURED_DUEL: ActiveDuel | null = null;
+export const ACTIVE_DUELS: ActiveDuel[] = [];
+export const INCOMING_DUELS: PendingDuel[] = [];
+export const OUTGOING_DUELS: PendingDuel[] = [];
 
-export const INCOMING_DUELS: PendingDuel[] = [
-  { opponent: '@nadia.k', level: 14, note: 'Challenged you · 3 days' },
-];
-
-export const OUTGOING_DUELS: PendingDuel[] = [
-  { opponent: '@sofia_r', level: 12, note: 'Invite sent yesterday · 7 days' },
-  { opponent: '@alexruiz', level: 17, note: 'Invite sent yesterday · 7 days' },
-];
-
-/**
- * Amigos de demostración, de `capturadiseño/Captura9.png`.
- *
- * `inDuel` es lo que decide el botón de la fila: con un duelo en curso el
- * diseño pinta `IN DUEL` en Rival y sin acción, no un `CHALLENGE` que
- * fallaría al pulsarlo.
- */
 export type Friend = {
   username: string;
   level: number;
@@ -159,26 +131,13 @@ export type FriendRequest = {
   level: number;
 };
 
-export const FRIEND_REQUESTS: FriendRequest[] = [{ username: '@ludsp', level: 6 }];
-
-export const FRIENDS: Friend[] = [
-  { username: '@alexruiz', level: 11, streakDays: 12, inDuel: true },
-  { username: '@sofia_r', level: 18, streakDays: 21, inDuel: false },
-  { username: '@luoji', level: 8, streakDays: 4, inDuel: false },
-  { username: '@nadia.k', level: 14, streakDays: 3, inDuel: false },
-];
-
 /**
- * Perfil de un amigo, de `capturadiseño/Captura11.png`.
- *
- * `record` es el historial cara a cara **en orden**, del duelo más antiguo al
- * más reciente: la tira de segmentos del diseño pinta uno por duelo, así que
- * necesita el orden, no solo el marcador. El marcador (`5 — 3`) y el total
- * («8 duels together») se derivan de aquí en vez de guardarse repetidos.
- *
- * `dailyAvgSteps` y `winRate` son estadísticas **del amigo**, no del cara a
- * cara: por eso el 58 % del diseño no cuadra con su 5–3 contra ti.
+ * Sin `friendship-repository.ts` no hay amigos de verdad: vacío para que la
+ * pantalla de Amigos muestre su estado vacío real (`FriendsEmptyScreen`).
  */
+export const FRIEND_REQUESTS: FriendRequest[] = [];
+export const FRIENDS: Friend[] = [];
+
 export type DuelOutcome = 'WIN' | 'LOSS';
 
 export type FriendProfile = {
@@ -196,21 +155,8 @@ export type FriendProfile = {
   winRate: number | null;
 };
 
-const ALEXRUIZ_PROFILE: FriendProfile = {
-  username: '@alexruiz',
-  level: 11,
-  streakDays: 12,
-  record: ['WIN', 'WIN', 'LOSS', 'WIN', 'LOSS', 'WIN', 'LOSS', 'WIN'],
-  dailyAvgSteps: 7318,
-  winRate: 58,
-};
-
-/**
- * Solo `@alexruiz` sale medido de la captura. Los demás se derivan de su fila
- * de la lista de amigos con un historial vacío: es preferible a inventarles un
- * marcador que luego no cuadre con nada.
- */
-export const FRIEND_PROFILES: FriendProfile[] = [ALEXRUIZ_PROFILE];
+/** Vacío: sin amigos de verdad no hay ningún perfil de amigo que enseñar. */
+export const FRIEND_PROFILES: FriendProfile[] = [];
 
 export function findFriendProfile(username: string): FriendProfile | null {
   const measured = FRIEND_PROFILES.find((profile) => profile.username === username);
@@ -232,9 +178,14 @@ export function findFriendProfile(username: string): FriendProfile | null {
 /**
  * Ajustes de demostración, de `capturadiseño/Captura14.png`. Los conmutadores
  * son estado local de la pantalla: todavía no hay dónde guardarlos.
+ *
+ * `stepTracking` dice la verdad (`NOT CONNECTED`), no lo que rotulaba la
+ * captura (`CONNECTED`): no hay HealthKit/Health Connect todavía (ver
+ * `docs/conteo-de-pasos.md`), así que afirmar que sí está conectado sería la
+ * misma mentira que los pasos de hoy. `dailyStepGoal` sí queda con un valor:
+ * es un objetivo configurable, no una medición.
  */
 export const SETTINGS_DEMO = {
-  joined: 'JOINED MAR 2026',
-  stepTracking: 'CONNECTED',
+  stepTracking: 'NOT CONNECTED',
   dailyStepGoal: 10000,
 };

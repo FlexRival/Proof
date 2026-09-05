@@ -16,6 +16,7 @@ Referencia de la capa de datos (Supabase / Postgres). Léela antes de tocar
 | `migrations/20260904100000_clan_war_stats_view.sql` | Vista `clan_war_stats`: victorias / derrotas / empates / pasos totales de cada clan en guerras, agregados desde `clan_wars`. Ver §11. |
 | `migrations/20260904110000_friendships.sql` | Amistades: tabla `friendships` (solicitud → aceptada/rechazada/cancelada), índice único parcial que impide duplicados en cualquier dirección; RPCs `send_friend_request` / `respond_to_friend_request` / `cancel_friend_request` / `remove_friend`. Ver §13. |
 | `migrations/20260905120000_cosmetics.sql` | Cosméticos de personaje: tablas `cosmetic_items` (catálogo), `user_cosmetics` (desbloqueos LEVEL), `user_equipped_cosmetics` (equipado por slot); desbloqueo automático por nivel vía trigger; RPCs `equip_cosmetic` / `unequip_cosmetic`; catálogo placeholder sembrado. Ver §14. |
+| `migrations/20260905130000_profile_avatar.sql` | Foto de perfil: columna `profiles.avatar_url`, bucket público `avatars` en Storage, policies de `storage.objects` que solo dejan subir/reemplazar/borrar dentro de la propia carpeta `<user_id>/...`. Ver §15. |
 
 Estado de aplicación:
 
@@ -23,13 +24,15 @@ Estado de aplicación:
   proyecto vinculado (`tirhukkivndhmlknvbfr`).
 - Las de clanes (`…150000_clans`, `…150500_clan_wars`), la del cron
   (`…090000_resolve_expired_competitions_cron`), la de amistades
-  (`…110000_friendships`) y la de cosméticos (`…120000_cosmetics`) **todavía
-  no se han hecho `supabase db push`**. Las de clanes y la de amistades se
-  validaron ejecutándolas sobre un Postgres 18 efímero (PGlite) con su flujo
-  completo; la de cosméticos se validó sobre el stack local real de Supabase
-  (`supabase start`, Docker) con su flujo completo (ver §14); la del cron
-  **no se puede validar así** porque ni PGlite ni el stack local por defecto
-  traen `pg_cron`/`pg_net` activos — solo se prueba contra un proyecto
+  (`…110000_friendships`), la de cosméticos (`…120000_cosmetics`) y la de foto
+  de perfil (`…130000_profile_avatar`) **todavía no se han hecho
+  `supabase db push`**. Las de clanes y la de amistades se validaron
+  ejecutándolas sobre un Postgres 18 efímero (PGlite) con su flujo completo;
+  las de cosméticos y foto de perfil se validaron sobre el stack local real de
+  Supabase (`supabase start`, Docker) con su flujo completo (ver §14 y §15) —
+  la de foto de perfil incluso contra la API real de Storage, no solo SQL; la
+  del cron **no se puede validar así** porque ni PGlite ni el stack local por
+  defecto traen `pg_cron`/`pg_net` activos — solo se prueba contra un proyecto
   Supabase real.
 
 ---
@@ -73,6 +76,7 @@ usuario de auth borra el perfil y todo lo que cuelga de él).
 | `xp` | `CHECK >= 0`, solo servidor |
 | `streak_days` | `CHECK >= 0`, solo servidor |
 | `is_pro` | flag de RevenueCat, solo servidor |
+| `avatar_url` | `NULL` hasta que el usuario suba una foto; el cliente la escribe directo (`GRANT UPDATE`), igual que `username` — no es un dato anti-cheat. Ver §15. |
 | `created_at` / `updated_at` | `updated_at` lo mantiene un trigger `moddatetime` en cada UPDATE |
 
 No hay clases de personaje: el enum `user_class` y la columna `avatar_class` se
@@ -148,7 +152,8 @@ Postgres lo evalúe una vez por consulta y no una vez por fila.
 Para cada tabla la migración hace `REVOKE ALL ... FROM authenticated` y luego
 concede de vuelta solo lo seguro:
 
-- **`profiles`**: `SELECT` + `UPDATE (username)`. Nada más. `xp`, `level`,
+- **`profiles`**: `SELECT` + `UPDATE (username)` + `UPDATE (avatar_url)`
+  (§15: no es anti-cheat, no da ventaja de juego). `xp`, `level`,
   `streak_days`, `is_pro` son físicamente no escribibles por la app aunque la
   fila sea del usuario.
 - **`step_logs`**: `SELECT` + `INSERT (user_id, date, steps_count)` +
@@ -546,6 +551,65 @@ outfits, 3 sombreros, 3 accesorios) tienen slugs y nombres provisionales.
 Pendiente de reemplazar/ampliar cuando se cure el set real de assets (pixel
 art estilo LPC/Liberated Pixel Cup) — añadir cosméticos reales será una
 migración de solo-`INSERT`.
+
+---
+
+## 15. Foto de perfil (`20260905130000_profile_avatar.sql`)
+
+Foto real subida por el usuario, distinta del personaje de cosméticos (§14):
+esta es la identidad de la cuenta (Ajustes), el personaje sigue siendo el
+avatar RPG (Home, Perfil). No es un dato anti-cheat — no da ninguna ventaja
+de juego — así que no pasa por RPC, va directo como `username`.
+
+### Columna
+
+`profiles.avatar_url` (`TEXT`, nullable). El cliente tiene
+`GRANT UPDATE (avatar_url)` además de `GRANT UPDATE (username)` — mismo
+principio, la RLS de `profiles` (§4: solo tu propia fila) ya cubre el resto.
+La URL lleva un query param `?updated=<epoch>` que cambia en cada subida
+nueva aunque la ruta del archivo sea la misma, para que ningún caché de
+imagen (el propio `<Image>`, un CDN) siga enseñando la foto vieja con la
+misma URL.
+
+### Bucket de Storage
+
+`avatars` — **público** (la URL sirve la imagen sin firmar, no hace falta
+policy de lectura para que funcione, aunque se añade una explícita por
+higiene). Límite `5 MiB`, solo `image/jpeg`/`image/png`/`image/webp`
+(`allowed_mime_types` del bucket).
+
+### Policies de `storage.objects`
+
+Cada usuario solo puede subir/reemplazar/borrar dentro de su propia carpeta
+`<user_id>/...` — `(storage.foldername(name))[1]` tiene que ser su propio
+`auth.uid()`. Mismo patrón recomendado por Supabase para storage por-usuario.
+`storage.objects` ya trae RLS activado por defecto (lo instala el propio
+proyecto de Storage), así que la migración solo añade las policies, no el
+`ENABLE ROW LEVEL SECURITY`.
+
+### Cliente
+
+`ProfileRepository.updateAvatar(image)` (`src/repositories/`): sube el
+archivo (`base64-arraybuffer` para decodificar el base64 de
+`expo-image-picker` a lo que espera `.storage.upload()`) con `upsert: true` a
+la misma ruta de siempre, y actualiza `avatar_url` en el mismo perfil.
+`CachedProfileRepository` invalida su caché a mano tras esta mutación: a
+diferencia de login/signup/logout, no dispara `onAuthStateChange`, así que
+sin la invalidación explícita `getCurrentProfile()` seguiría devolviendo la
+foto vieja hasta que caducase el caché por su cuenta.
+
+### Validación
+
+Probada contra la **API real de Storage** del stack local (no solo SQL
+simulado): usuario A sube a su propia carpeta (200); usuario A intenta subir
+a la carpeta de usuario B (rechazado por RLS — el servicio de Storage lo
+envuelve en HTTP 400, pero el cuerpo confirma `"new row violates row-level
+security policy"`); lectura pública sin token (200); `PATCH` de
+`avatar_url` vía REST (204) y confirmado en la tabla. Probada además de
+punta a punta en el navegador: `expo-image-picker` en web abre un
+`input[type=file]` real, se subió un PNG de verdad y `avatar_url` quedó
+actualizado y visible en el `Image` de la pantalla. Aún sin
+`supabase db push` al proyecto vinculado.
 
 ---
 

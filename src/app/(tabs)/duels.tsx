@@ -25,8 +25,10 @@ import { formatCount } from '@/lib/format';
  * Duelos, con sus tres filtros. Sigue a `capturadiseño/Captura5.png` (activos)
  * y `Captura6.png` (pendientes).
  *
- * **Datos de demostración todavía.** Ninguna acción muta nada: falta un
- * `duel-repository.ts` que envuelva las RPC `respond_to_duel` y compañía.
+ * **Sin datos todavía**, y a propósito: falta un `duel-repository.ts` que
+ * envuelva las RPC `respond_to_duel` y compañía, así que `ACTIVE_DUELS` /
+ * `INCOMING_DUELS` / `OUTGOING_DUELS` van vacíos en vez de con duelos
+ * inventados — cada pestaña cae en su estado vacío real.
  *
  * `HISTORY` no tiene captura, así que va con un vacío sobrio en vez de con un
  * diseño inventado.
@@ -67,46 +69,60 @@ export default function DuelsScreen() {
 }
 
 function ActiveDuels() {
-  const { opponent, yourSteps, theirSteps, endsIn } = FEATURED_DUEL;
-  const leading = yourSteps >= theirSteps;
+  if (!FEATURED_DUEL && ACTIVE_DUELS.length === 0) {
+    return (
+      <ThemedText type="small" themeColor="textDim" style={styles.empty}>
+        No active duels yet.
+      </ThemedText>
+    );
+  }
 
   return (
     <>
-      <Card variant="highlight" style={styles.block}>
-        <View style={styles.spread}>
-          <Notice
-            message={leading ? 'YOU ARE LEADING' : 'YOU ARE BEHIND'}
-            tone={leading ? 'primary' : 'rival'}
-            style={styles.status}
-          />
-          <ThemedText type="label" themeColor="textMuted">
-            {endsIn}
-          </ThemedText>
-        </View>
-
-        <View style={styles.versusRow}>
-          {/* Personajes (KAN-19): reservan el espacio del diseño. */}
-          <Card style={styles.versusCharacter} />
-          <ThemedText type="smallBold" themeColor="textMuted">
-            VS
-          </ThemedText>
-          <Card variant="rival" style={styles.versusCharacter} />
-        </View>
-
-        <View style={styles.spread}>
-          <SideCount label="STEPS" value={yourSteps} color="primary" />
-          <SideCount label="STEPS" value={theirSteps} color="defeat" align="right" />
-        </View>
-
-        <VersusBar yourSteps={yourSteps} theirSteps={theirSteps} />
-
-        <Button label={`View duel vs ${opponent}`} />
-      </Card>
+      {FEATURED_DUEL ? <FeaturedDuelCard duel={FEATURED_DUEL} /> : null}
 
       {ACTIVE_DUELS.map((duel) => (
         <DuelRow key={duel.opponent} duel={duel} />
       ))}
     </>
+  );
+}
+
+function FeaturedDuelCard({ duel }: { duel: ActiveDuel }) {
+  const { opponent, yourSteps, theirSteps, endsIn } = duel;
+  const leading = yourSteps >= theirSteps;
+
+  return (
+    <Card variant="highlight" style={styles.block}>
+      <View style={styles.spread}>
+        <Notice
+          message={leading ? 'YOU ARE LEADING' : 'YOU ARE BEHIND'}
+          tone={leading ? 'primary' : 'rival'}
+          style={styles.status}
+        />
+        <ThemedText type="label" themeColor="textMuted">
+          {endsIn}
+        </ThemedText>
+      </View>
+
+      <View style={styles.versusRow}>
+        {/* Personajes (KAN-19): reservan el espacio del diseño. */}
+        <Card style={styles.versusCharacter} />
+        <ThemedText type="smallBold" themeColor="textMuted">
+          VS
+        </ThemedText>
+        <Card variant="rival" style={styles.versusCharacter} />
+      </View>
+
+      <View style={styles.spread}>
+        <SideCount label="STEPS" value={yourSteps} color="primary" />
+        <SideCount label="STEPS" value={theirSteps} color="defeat" align="right" />
+      </View>
+
+      <VersusBar yourSteps={yourSteps} theirSteps={theirSteps} />
+
+      <Button label={`View duel vs ${opponent}`} />
+    </Card>
   );
 }
 
@@ -180,23 +196,37 @@ function DuelRow({ duel }: { duel: ActiveDuel }) {
 }
 
 function PendingDuels() {
+  if (INCOMING_DUELS.length === 0 && OUTGOING_DUELS.length === 0) {
+    return (
+      <ThemedText type="small" themeColor="textDim" style={styles.empty}>
+        No pending duels.
+      </ThemedText>
+    );
+  }
+
   return (
     <>
-      <ThemedText type="label" themeColor="textDim">
-        INCOMING
-      </ThemedText>
-      {INCOMING_DUELS.map((duel) => (
-        <PendingRow key={duel.opponent} duel={duel} incoming />
-      ))}
+      {INCOMING_DUELS.length > 0 ? (
+        <>
+          <ThemedText type="label" themeColor="textDim">
+            INCOMING
+          </ThemedText>
+          {INCOMING_DUELS.map((duel) => (
+            <PendingRow key={duel.opponent} duel={duel} incoming />
+          ))}
+        </>
+      ) : null}
 
-      <ThemedText type="label" themeColor="textDim">
-        WAITING FOR THEM
-      </ThemedText>
-      {OUTGOING_DUELS.map((duel) => (
-        <PendingRow key={duel.opponent} duel={duel} incoming={false} />
-      ))}
-
-      <Notice message="Duel accepted. It is on." />
+      {OUTGOING_DUELS.length > 0 ? (
+        <>
+          <ThemedText type="label" themeColor="textDim">
+            WAITING FOR THEM
+          </ThemedText>
+          {OUTGOING_DUELS.map((duel) => (
+            <PendingRow key={duel.opponent} duel={duel} incoming={false} />
+          ))}
+        </>
+      ) : null}
     </>
   );
 }

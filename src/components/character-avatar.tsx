@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { Card } from '@/components/card';
+import { ThemedText } from '@/components/themed-text';
 import { COSMETIC_ASSETS } from '@/constants/cosmetic-assets';
 import { Radius } from '@/constants/theme';
 import type { CosmeticSlot, EquippedCosmetics } from '@/repositories';
@@ -12,6 +13,15 @@ import type { CosmeticSlot, EquippedCosmetics } from '@/repositories';
  * por encima de todo.
  */
 const LAYER_ORDER: readonly CosmeticSlot[] = ['SKIN', 'OUTFIT', 'HAIR', 'HEADWEAR', 'ACCESSORY'];
+
+/** Para pantallas que todavía no cargaron lo equipado (o no hay sesión). */
+export const EMPTY_EQUIPPED_COSMETICS: EquippedCosmetics = {
+  SKIN: null,
+  HAIR: null,
+  OUTFIT: null,
+  HEADWEAR: null,
+  ACCESSORY: null,
+};
 
 export type CharacterAvatarProps = ViewProps & {
   equipped: EquippedCosmetics;
@@ -25,9 +35,10 @@ export type CharacterAvatarProps = ViewProps & {
  * de assets (ver `supabase/SCHEMA.md` §14).
  */
 export function CharacterAvatar({ equipped, size = 160, style, ...rest }: CharacterAvatarProps) {
-  const layers = LAYER_ORDER.map((slot) => equipped[slot]).filter(
+  const itemIds = LAYER_ORDER.map((slot) => equipped[slot]).filter(
     (itemId): itemId is string => itemId !== null,
   );
+  const renderableLayers = itemIds.filter((itemId) => COSMETIC_ASSETS[itemId] !== undefined);
 
   return (
     <Card
@@ -35,21 +46,24 @@ export function CharacterAvatar({ equipped, size = 160, style, ...rest }: Charac
       style={[{ width: size, height: size, padding: 0, overflow: 'hidden' }, style]}
       {...rest}>
       <View style={styles.stage}>
-        {layers.map((itemId) => {
-          const asset = COSMETIC_ASSETS[itemId];
-          if (!asset) {
-            return null;
-          }
-
-          return (
+        {renderableLayers.length === 0 ? (
+          // Todavía no hay set de assets reales (ver `supabase/SCHEMA.md` §14):
+          // esto se ve mientras se cura, no es un fallo del componente.
+          <View style={styles.placeholder}>
+            <ThemedText type="caption" themeColor="textDim" style={styles.placeholderText}>
+              No look yet
+            </ThemedText>
+          </View>
+        ) : (
+          renderableLayers.map((itemId) => (
             <Image
               key={itemId}
-              source={asset}
+              source={COSMETIC_ASSETS[itemId]}
               style={StyleSheet.absoluteFill}
               contentFit="contain"
             />
-          );
-        })}
+          ))
+        )}
       </View>
     </Card>
   );
@@ -60,5 +74,13 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: Radius.lg,
     overflow: 'hidden',
+  },
+  placeholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    textAlign: 'center',
   },
 });

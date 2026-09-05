@@ -42,6 +42,7 @@ export type ProfileRow = {
   xp: number;
   streak_days: number;
   is_pro: boolean;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -196,8 +197,8 @@ export type Database = {
          * del trigger `handle_new_user()` al registrarse el usuario.
          */
         Insert: never;
-        /** El cliente solo tiene `GRANT UPDATE (username)`. */
-        Update: { username?: string };
+        /** El cliente tiene `GRANT UPDATE (username)` y `GRANT UPDATE (avatar_url)`. */
+        Update: { username?: string; avatar_url?: string | null };
         Relationships: [];
       };
       step_logs: {

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/character-avatar';
 import { Chip } from '@/components/chip';
 import { EmptyState } from '@/components/empty-state';
 import { MeterBar, type MeterTone } from '@/components/meter-bar';
@@ -12,40 +13,61 @@ import { ThemedView } from '@/components/themed-view';
 import { XpProgress } from '@/components/xp-progress';
 import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
+import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
+import { useProfile } from '@/hooks/use-profile';
 import { formatCount } from '@/lib/format';
-import { demoLevelProgress, HOME_DEMO, type DuelSide } from '@/lib/demo-data';
+import { HOME_DEMO, type DuelSide } from '@/lib/demo-data';
+import { levelProgress } from '@/lib/xp';
+import type { EquippedCosmetics } from '@/repositories';
 
 /**
  * Pantalla principal: quién eres, tu nivel, los pasos de hoy y el duelo en
  * curso. Sigue a `capturadiseño/Captura3.png`.
  *
- * **Los datos son de mentira todavía** (`HOME_MOCK`), tal y como pide KAN-22
- * mientras el backend no está. Ese archivo documenta a qué repositorio se
- * conectará cada campo.
+ * Identidad (username, nivel, XP) y el avatar equipado son **datos reales de
+ * la sesión** (`useProfile` / `useMyEquippedCosmetics`). Pasos y duelo
+ * **siguen en `HOME_DEMO`**: no hay repositorio de pasos ni de duelos
+ * todavía — ese archivo documenta a qué repositorio se conectará cada campo
+ * cuando exista.
+ *
+ * El "RANK" de la captura no sale: era un sustituto de la clase de personaje
+ * descartada, y no hay ningún concepto de rango individual en el esquema
+ * (`clans.rank_points` es de clan, no de jugador) — enseñar uno inventado
+ * sería tan de mentira como el dato que sustituyó.
  *
  * Los pasos van en neutro, nunca en Power: el diseño insiste en que los pasos
  * son actividad, no un contador de XP en vivo.
  */
 export default function HomeScreen() {
-  const { username, rank, steps, stepGoal, duel } = HOME_DEMO;
-  const { level, xpIntoLevel, xpForNextLevel } = demoLevelProgress();
+  const { state: profileState } = useProfile();
+  const { state: equippedState } = useMyEquippedCosmetics();
+
+  const { steps, stepGoal, duel } = HOME_DEMO;
 
   const stepsToGoal = Math.max(0, stepGoal - steps);
   // Las dos barras del duelo se miden contra quien va ganando, para que la del
   // líder salga llena y la diferencia se lea de un vistazo.
   const duelLeader = duel ? Math.max(duel.you.steps, duel.rival.steps) : 0;
 
+  if (profileState.status !== 'ready') {
+    // El guard de sesión de `_layout.tsx` ya garantiza que llegar aquí implica
+    // sesión iniciada; esto solo cubre el instante de carga o un fallo real.
+    return <ThemedView style={styles.screen} />;
+  }
+
+  const { username, xp } = profileState.data;
+  const { level, xpIntoLevel, xpForNextLevel } = levelProgress(xp);
+  const equipped = equippedState.status === 'ready' ? equippedState.data : EMPTY_EQUIPPED_COSMETICS;
+
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            {/* Avatar (KAN-19). */}
-            <Card style={styles.avatar} />
+            <CharacterAvatar equipped={equipped} size={AVATAR_SIZE} />
 
             <View style={styles.identity}>
               <ThemedText type="bodyBold">{username}</ThemedText>
-              <ThemedText type="label" themeColor="textDim">{`RANK · ${rank}`}</ThemedText>
             </View>
 
             <Chip label={`LV ${level}`} tone="primary" />
@@ -53,8 +75,7 @@ export default function HomeScreen() {
 
           {duel ? (
             <>
-              {/* Personaje (KAN-19): reserva el espacio del diseño. */}
-              <Card style={styles.character} />
+              <CharacterAvatar equipped={equipped} style={styles.character} />
 
               <ThemedText type="heading" style={styles.level}>{`LEVEL ${level}`}</ThemedText>
 
@@ -100,7 +121,7 @@ export default function HomeScreen() {
               />
             </>
           ) : (
-            <NoDuelState steps={steps} />
+            <NoDuelState steps={steps} equipped={equipped} />
           )}
         </ScrollView>
       </SafeAreaView>
@@ -116,7 +137,7 @@ export default function HomeScreen() {
  * compacta que explica para qué sirven: sin duelo no se gana XP, así que
  * enseñar la barra de XP aquí sería enseñar algo que no se mueve.
  */
-function NoDuelState({ steps }: { steps: number }) {
+function NoDuelState({ steps, equipped }: { steps: number; equipped: EquippedCosmetics }) {
   return (
     <>
       <EmptyState
@@ -124,8 +145,7 @@ function NoDuelState({ steps }: { steps: number }) {
         message="Challenge someone and prove who's got it."
         actionLabel="Challenge a friend"
         onAction={() => router.push(ROUTES.newDuel.href)}>
-        {/* Personaje inactivo (KAN-19): reserva el espacio del diseño. */}
-        <Card variant="sunken" style={styles.idleCharacter} />
+        <CharacterAvatar equipped={equipped} style={styles.idleCharacter} />
       </EmptyState>
 
       {/*
@@ -206,11 +226,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    padding: 0,
   },
   identity: {
     flex: 1,

@@ -22,7 +22,8 @@ export type RouteKey =
   | 'victory'
   | 'newDuel'
   | 'friendProfile'
-  | 'customizeCharacter';
+  | 'customizeCharacter'
+  | 'login';
 
 export type RouteDefinition = {
   key: RouteKey;
@@ -86,6 +87,11 @@ export const ROUTES: Record<RouteKey, RouteDefinition> = {
     label: 'Customize character',
     tab: false,
   },
+  /**
+   * Puerta de entrada sin sesión. No se navega a mano: `src/app/_layout.tsx`
+   * la muestra u oculta con `Stack.Protected` según haya sesión o no.
+   */
+  login: { key: 'login', href: '/login', label: 'Sign in', tab: false },
 };
 
 /** Solo las rutas de la barra de navegación, en el orden en que se pintan. */

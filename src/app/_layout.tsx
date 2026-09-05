@@ -4,11 +4,13 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { FONT_ASSETS } from '@/constants/theme';
+import { useProfile } from '@/hooks/use-profile';
 
 SplashScreen.preventAutoHideAsync();
 
 /**
- * Layout raíz: un `Stack` con el grupo de pestañas dentro.
+ * Layout raíz: un `Stack` con el grupo de pestañas dentro, detrás de una
+ * puerta de sesión (`Stack.Protected`).
  *
  * El `Stack` no es decorativo. Antes la app era solo un navegador de
  * pestañas, y un navegador de pestañas únicamente registra las rutas que
@@ -16,49 +18,61 @@ SplashScreen.preventAutoHideAsync();
  * pantalla principal. Todo lo que no es pestaña —ajustes, la subida de
  * nivel— necesita esta capa para poder abrirse encima de las pestañas y
  * poder cerrarse volviendo atrás.
+ *
+ * `Stack.Protected` decide en cada render qué mitad del árbol existe según
+ * `isSignedIn`: no es un `if` que se salta una vez, así que un logout hace
+ * que las pantallas de dentro se desmonten solas y aparezca `login`, sin
+ * `router.replace` manual — y al revés tras un login/signup exitoso.
  */
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
+  const { state: profileState } = useProfile();
 
-  // El splash nativo sigue en pantalla (`preventAutoHideAsync`), así que no
-  // pintar nada aquí no deja un hueco en blanco: lo tapa el splash. Si
-  // pintáramos antes, el primer frame saldría con la fuente del sistema y
-  // saltaría de golpe al entrar Chakra Petch.
-  if (!fontsLoaded && !fontError) return null;
+  // Mismo truco que con las fuentes: mientras no sepamos si hay sesión, no
+  // pintamos nada y el splash nativo se queda cubriendo — así no hay un
+  // parpadeo de "login" seguido de un salto a "tabs" en cuanto llega la
+  // sesión guardada.
+  if ((!fontsLoaded && !fontError) || profileState.status === 'loading') return null;
 
-  // Un fallo de carga no bloquea la app: preferimos las pantallas con la
-  // fuente del sistema antes que un negro permanente. Se avisa por consola
-  // porque si no el fallo es visible pero silencioso.
   if (fontError) {
     console.warn('[fonts] no se pudieron cargar las fuentes de marca:', fontError.message);
   }
+
+  const isSignedIn = profileState.status === 'ready';
 
   return (
     <ThemeProvider value={DarkTheme}>
       <AnimatedSplashOverlay />
 
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="settings" />
-        {/*
-          La subida de nivel se presenta como modal: tapa las pestañas
-          mientras dura la celebración y su «Continue» es un `back` que
-          devuelve exactamente a donde estabas.
-        */}
-        <Stack.Screen name="level-up" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="victory" options={{ presentation: 'modal' }} />
-        {/*
-          Crear un duelo también es modal: es una tarea con principio y fin
-          que se abre encima de donde estabas y te devuelve ahí al cerrarse.
-          Sus tres pasos viven dentro de esta única pantalla.
-        */}
-        <Stack.Screen name="new-duel" options={{ presentation: 'modal' }} />
-        {/*
-          El perfil de un amigo sí es un destino, no una tarea: se apila sobre
-          la lista de amigos y se vuelve con el botón de atrás, como ajustes.
-        */}
-        <Stack.Screen name="friend-profile" />
-        <Stack.Screen name="customize-character" />
+        <Stack.Protected guard={isSignedIn}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="settings" />
+          {/*
+            La subida de nivel se presenta como modal: tapa las pestañas
+            mientras dura la celebración y su «Continue» es un `back` que
+            devuelve exactamente a donde estabas.
+          */}
+          <Stack.Screen name="level-up" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="victory" options={{ presentation: 'modal' }} />
+          {/*
+            Crear un duelo también es modal: es una tarea con principio y fin
+            que se abre encima de donde estabas y te devuelve ahí al cerrarse.
+            Sus tres pasos viven dentro de esta única pantalla.
+          */}
+          <Stack.Screen name="new-duel" options={{ presentation: 'modal' }} />
+          {/*
+            El perfil de un amigo sí es un destino, no una tarea: se apila
+            sobre la lista de amigos y se vuelve con el botón de atrás, como
+            ajustes.
+          */}
+          <Stack.Screen name="friend-profile" />
+          <Stack.Screen name="customize-character" />
+        </Stack.Protected>
+
+        <Stack.Protected guard={!isSignedIn}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
       </Stack>
     </ThemeProvider>
   );

@@ -1,24 +1,34 @@
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/character-avatar';
+import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ROUTES } from '@/constants/routes';
-import { MaxContentWidth, Palette, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Palette, Radius, Spacing } from '@/constants/theme';
+import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
+import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
-import { demoLevelProgress, HOME_DEMO, SETTINGS_DEMO } from '@/lib/demo-data';
-import { formatCount } from '@/lib/format';
+import { SETTINGS_DEMO } from '@/lib/demo-data';
+import { formatCount, formatJoinDate } from '@/lib/format';
+import { levelProgress } from '@/lib/xp';
+import { profileRepository, RepositoryError, type EquippedCosmetics } from '@/repositories';
 
 /**
  * Ajustes. Sigue a `capturadiseño/Captura14.png`.
  *
- * **Nada de esto persiste todavía.** Los conmutadores son estado local: no hay
- * tabla de preferencias en el esquema, así que guardarlos sería inventarse la
- * capa de datos.
+ * Identidad (username, nivel, fecha de alta) y avatar son **datos reales de
+ * la sesión**. El resto — conmutadores de notificaciones, origen de pasos —
+ * sigue de mentira: los conmutadores porque no hay tabla de preferencias
+ * (guardarlos sería inventarse la capa de datos), y el origen de pasos
+ * porque la captura de pasos no está implementada (`docs/conteo-de-pasos.md`).
  *
  * Esta pantalla fue la que destapó que las rutas fuera de las pestañas eran
  * inalcanzables: existía como archivo y abrirla pintaba la pantalla principal.
@@ -28,8 +38,78 @@ export default function SettingsScreen() {
   const [leadChanges, setLeadChanges] = useState(true);
   const [duelInvites, setDuelInvites] = useState(true);
   const [stepSummary, setStepSummary] = useState(false);
+  const [logOutError, setLogOutError] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
-  const { level } = demoLevelProgress();
+  const { state: profileState, reload: reloadProfile } = useProfile();
+  const { state: equippedState } = useMyEquippedCosmetics();
+
+  async function handleLogOut() {
+    setLogOutError(null);
+    try {
+      // No hace falta navegar tras esto: el logout dispara `onAuthStateChange`,
+      // `Stack.Protected` en `_layout.tsx` lo nota y cambia solo a `login`.
+      await profileRepository.signOut();
+    } catch (error) {
+      setLogOutError(
+        error instanceof RepositoryError ? error.message : 'No se pudo cerrar sesión.',
+      );
+    }
+  }
+
+  async function handleChangePhoto() {
+    setAvatarError(null);
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setAvatarError('Enable photo library access in your device settings to set a photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    if (!asset.base64) {
+      setAvatarError('Could not read that photo. Try a different one.');
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      await profileRepository.updateAvatar({
+        base64: asset.base64,
+        mimeType: asset.mimeType ?? 'image/jpeg',
+      });
+      await reloadProfile();
+    } catch (error) {
+      setAvatarError(
+        error instanceof RepositoryError ? error.message : 'No se pudo subir la foto.',
+      );
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
+  if (profileState.status !== 'ready') {
+    // El guard de sesión de `_layout.tsx` ya garantiza que llegar aquí implica
+    // sesión iniciada; esto solo cubre el instante de carga o un fallo real.
+    return <ThemedView style={styles.screen} />;
+  }
+
+  const { username, xp, createdAt, avatarUrl } = profileState.data;
+  const { level } = levelProgress(xp);
+  const equipped = equippedState.status === 'ready' ? equippedState.data : EMPTY_EQUIPPED_COSMETICS;
 
   return (
     <ThemedView style={styles.screen}>
@@ -43,20 +123,28 @@ export default function SettingsScreen() {
           </View>
 
           <Card style={styles.identity}>
-            {/* Avatar (KAN-19). */}
-            <Card variant="sunken" style={styles.avatar} />
+            <Pressable onPress={handleChangePhoto} disabled={avatarUploading}>
+              <ProfilePhoto avatarUrl={avatarUrl} equipped={equipped} />
+            </Pressable>
 
             <View style={styles.identityBody}>
-              <ThemedText type="bodyBold">{HOME_DEMO.username}</ThemedText>
+              <ThemedText type="bodyBold">{username}</ThemedText>
               <ThemedText type="caption" themeColor="textMuted">
-                {`LV ${level} · ${SETTINGS_DEMO.joined}`}
+                {`LV ${level} · JOINED ${formatJoinDate(createdAt)}`}
+              </ThemedText>
+              <ThemedText
+                type="linkPrimary"
+                onPress={avatarUploading ? undefined : handleChangePhoto}>
+                {avatarUploading ? 'Uploading…' : 'Change photo'}
               </ThemedText>
             </View>
           </Card>
 
+          {avatarError ? <Notice tone="rival" message={avatarError} /> : null}
+
           <Section title="ACTIVITY SOURCE">
             <SettingRow label="Step tracking">
-              <ThemedText type="smallBold" themeColor="primary">
+              <ThemedText type="smallBold" themeColor="textMuted">
                 {SETTINGS_DEMO.stepTracking}
               </ThemedText>
             </SettingRow>
@@ -85,13 +173,9 @@ export default function SettingsScreen() {
           <Section title="ACCOUNT">
             <SettingRow label="Privacy and visibility" />
 
-            {/*
-              Cerrar sesión de verdad tiene que pasar por el repositorio, no
-              por `supabase.auth` a pelo: fuera de `src/repositories/` la app no
-              habla con el backend. Queda como fila sin acción hasta que exista
-              ese método, en vez de un botón que miente.
-            */}
-            <SettingRow label="Log out" labelColor="defeat" />
+            <SettingRow label="Log out" labelColor="defeat" onPress={handleLogOut} />
+
+            {logOutError ? <Notice tone="rival" message={logOutError} /> : null}
           </Section>
         </ScrollView>
       </SafeAreaView>
@@ -109,6 +193,22 @@ function goBack() {
   router.replace(ROUTES.home.href);
 }
 
+/**
+ * Foto real si el usuario ya subió una; si no, el personaje de cosméticos
+ * como respaldo — no un círculo vacío. Son dos conceptos distintos a
+ * propósito: esta es tu identidad de cuenta, `CharacterAvatar` (Home, Perfil)
+ * es tu personaje del juego.
+ */
+type ProfilePhotoProps = { avatarUrl: string | null; equipped: EquippedCosmetics };
+
+function ProfilePhoto({ avatarUrl, equipped }: ProfilePhotoProps) {
+  if (avatarUrl) {
+    return <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" />;
+  }
+
+  return <CharacterAvatar equipped={equipped} size={AVATAR_SIZE} />;
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
@@ -123,11 +223,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 type SettingRowProps = {
   label: string;
   labelColor?: 'text' | 'defeat';
+  onPress?: () => void;
   children?: ReactNode;
 };
 
-function SettingRow({ label, labelColor = 'text', children }: SettingRowProps) {
-  return (
+function SettingRow({ label, labelColor = 'text', onPress, children }: SettingRowProps) {
+  const row = (
     <Card variant="sunken" style={styles.row}>
       <ThemedText type="small" themeColor={labelColor}>
         {label}
@@ -135,6 +236,12 @@ function SettingRow({ label, labelColor = 'text', children }: SettingRowProps) {
       {children}
     </Card>
   );
+
+  if (!onPress) {
+    return row;
+  }
+
+  return <Pressable onPress={onPress}>{row}</Pressable>;
 }
 
 /**
@@ -187,8 +294,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
   },
-  avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, padding: 0 },
   identityBody: { flex: 1, gap: Spacing.one },
+  avatarImage: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: Radius.pill,
+  },
   section: { gap: Spacing.two },
   row: {
     flexDirection: 'row',

@@ -24,3 +24,13 @@ const COMPACT_FORMAT = new Intl.NumberFormat('en-US', {
 export function formatCompact(value: number): string {
   return COMPACT_FORMAT.format(value);
 }
+
+/**
+ * Mes y año en mayúsculas para "fecha de alta": `2026-03-14T...` → `MAR 2026`.
+ * El "JOINED" delante es copy de pantalla, no de este formateador.
+ */
+const JOIN_DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' });
+
+export function formatJoinDate(isoDate: string): string {
+  return JOIN_DATE_FORMAT.format(new Date(isoDate)).toUpperCase();
+}

@@ -3,43 +3,59 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { Card } from '@/components/card';
+import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/character-avatar';
 import { StatTile } from '@/components/stat-tile';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { XpProgress } from '@/components/xp-progress';
 import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { demoLevelProgress, PROFILE_DEMO } from '@/lib/demo-data';
+import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
+import { useProfile } from '@/hooks/use-profile';
+import { PROFILE_DEMO } from '@/lib/demo-data';
 import { formatCompact, formatCount } from '@/lib/format';
+import { levelProgress } from '@/lib/xp';
 
 /**
  * Perfil del jugador: personaje, nivel y su historial de duelos.
  * Sigue a `capturadiseño/Captura12.png`.
  *
- * **Datos de demostración todavía** (`PROFILE_DEMO`), igual que la pantalla
- * principal.
+ * Identidad (username, nivel, XP, racha) y el avatar equipado son **datos
+ * reales de la sesión** (`useProfile` / `useMyEquippedCosmetics`). Victorias,
+ * derrotas, duelos y pasos totales **siguen en `PROFILE_DEMO`**: no hay
+ * repositorio de duelos/pasos todavía (ver los comentarios de
+ * `src/lib/demo-data.ts`) — mostrar un 0 falso ahí sería tan de mentira como
+ * el número de la captura, así que se quedan como están hasta que exista esa
+ * pieza.
  *
- * Dos desvíos conscientes respecto a la captura, ambos porque el diseño es
- * anterior a decisiones que ya se tomaron:
+ * Dos desvíos conscientes respecto a la captura:
  * - La captura rotula `@marcodev · VANGUARD`, y VANGUARD es una **clase de
  *   personaje**. Las clases se descartaron (el esquema borró `user_class` y
- *   `avatar_class`), así que aquí va el rango, como en la pantalla principal.
+ *   `avatar_class`) y no hay ningún concepto de "rango" individual que lo
+ *   sustituya en el esquema (`clans.rank_points` es de clan, no de jugador) —
+ *   así que esa mitad de la línea se quita en vez de inventar un dato falso.
  * - El botón de ajustes de la cabecera es un icono circular en la captura.
  *   No hay sistema de iconos todavía, así que va como botón con texto.
- *
- * "Customize character" sí navega a una pantalla real
- * (`src/app/customize-character.tsx`) con sesión y repositorio de verdad —
- * a diferencia del resto de esta pantalla, que sigue en `PROFILE_DEMO`.
  */
 export default function ProfileScreen() {
-  const { username, rank, wins, losses, streak, totalSteps } = PROFILE_DEMO;
-  const { level, xpIntoLevel, xpForNextLevel } = demoLevelProgress();
+  const { state: profileState } = useProfile();
+  const { state: equippedState } = useMyEquippedCosmetics();
 
-  // Duelos y acierto se derivan: guardarlos aparte los dejaría desincronizarse
-  // de las victorias y las derrotas.
+  // Todavía de mentira: sin duel-repository ni agregación de step_logs no hay
+  // de dónde sacar esto de verdad. Ver el comentario de arriba.
+  const { wins, losses, totalSteps } = PROFILE_DEMO;
   const duels = wins + losses;
   const winRate = duels > 0 ? Math.round((wins / duels) * 100) : 0;
+
+  if (profileState.status !== 'ready') {
+    // El guard de sesión de `_layout.tsx` ya garantiza que llegar aquí implica
+    // sesión iniciada; esto solo cubre el instante de carga o un fallo real.
+    return <ThemedView style={styles.screen} />;
+  }
+
+  const { username, xp, streakDays } = profileState.data;
+  const { level, xpIntoLevel, xpForNextLevel } = levelProgress(xp);
+  const equipped = equippedState.status === 'ready' ? equippedState.data : EMPTY_EQUIPPED_COSMETICS;
 
   return (
     <ThemedView style={styles.screen}>
@@ -54,11 +70,10 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {/* Personaje (KAN-19): reserva el espacio del diseño. */}
-          <Card style={styles.character} />
+          <CharacterAvatar equipped={equipped} style={styles.character} />
 
           <ThemedText type="bodyBold" style={styles.identity}>
-            {`${username} · ${rank}`}
+            {username}
           </ThemedText>
 
           <ThemedText type="heading" style={styles.level}>{`LEVEL ${level}`}</ThemedText>
@@ -73,7 +88,7 @@ export default function ProfileScreen() {
 
           <View style={styles.statsRow}>
             <StatTile label="DUELS" value={formatCount(duels)} />
-            <StatTile label="STREAK" value={`🔥 ${formatCount(streak)}`} />
+            <StatTile label="STREAK" value={`🔥 ${formatCount(streakDays)}`} />
             <StatTile label="TOTAL STEPS" value={formatCompact(totalSteps)} />
           </View>
 
