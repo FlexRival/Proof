@@ -47,6 +47,17 @@ export default function RootLayout() {
         */}
         <Stack.Screen name="level-up" options={{ presentation: 'modal' }} />
         <Stack.Screen name="victory" options={{ presentation: 'modal' }} />
+        {/*
+          Crear un duelo también es modal: es una tarea con principio y fin
+          que se abre encima de donde estabas y te devuelve ahí al cerrarse.
+          Sus tres pasos viven dentro de esta única pantalla.
+        */}
+        <Stack.Screen name="new-duel" options={{ presentation: 'modal' }} />
+        {/*
+          El perfil de un amigo sí es un destino, no una tarea: se apila sobre
+          la lista de amigos y se vuelve con el botón de atrás, como ajustes.
+        */}
+        <Stack.Screen name="friend-profile" />
       </Stack>
     </ThemeProvider>
   );

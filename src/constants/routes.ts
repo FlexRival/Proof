@@ -12,7 +12,16 @@ import type { Href } from 'expo-router';
  * su href. La barra web (`app-tabs.web.tsx`) sí puede recorrer `TAB_ROUTES`
  * con un `.map()`.
  */
-export type RouteKey = 'home' | 'duels' | 'friends' | 'profile' | 'settings' | 'levelUp' | 'victory';
+export type RouteKey =
+  | 'home'
+  | 'duels'
+  | 'friends'
+  | 'profile'
+  | 'settings'
+  | 'levelUp'
+  | 'victory'
+  | 'newDuel'
+  | 'friendProfile';
 
 export type RouteDefinition = {
   key: RouteKey;
@@ -47,6 +56,24 @@ export const ROUTES: Record<RouteKey, RouteDefinition> = {
    * atrás. El `href` de aquí es la ruta pelada; quien la abre pone lo demás.
    */
   victory: { key: 'victory', href: '/victory', label: 'Victory', tab: false },
+  /**
+   * Asistente de crear duelo. Tampoco es destino de la barra: se abre desde el
+   * atajo de la pantalla principal (`/new-duel`) o desde el botón de retar de
+   * una fila de amigos, que trae el rival ya elegido
+   * (`/new-duel?opponent=@alexruiz`). El `href` de aquí es la ruta pelada.
+   */
+  newDuel: { key: 'newDuel', href: '/new-duel', label: 'New duel', tab: false },
+  /**
+   * Perfil de otro jugador. Se abre desde una fila de la lista de amigos con
+   * el usuario en la URL (`/friend-profile?username=@alexruiz`); el `href` de
+   * aquí es la ruta pelada, y quien la abre pone el parámetro.
+   */
+  friendProfile: {
+    key: 'friendProfile',
+    href: '/friend-profile',
+    label: 'Friend profile',
+    tab: false,
+  },
 };
 
 /** Solo las rutas de la barra de navegación, en el orden en que se pintan. */

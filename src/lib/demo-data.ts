@@ -27,12 +27,18 @@ export type HomeData = {
   xp: number;
   steps: number;
   stepGoal: number;
+  /**
+   * `null` cuando no hay ningún duelo en curso. No es un caso raro: es el
+   * estado de una cuenta recién hecha, y el diseño le dedica una pantalla
+   * entera (`capturadiseño/Captura4.png`). Nullable en el tipo para que la
+   * pantalla no pueda olvidarse de cubrirlo.
+   */
   duel: {
     /** Cuenta atrás ya formateada. La dará el servidor, no se calcula aquí. */
     endsIn: string;
     you: DuelSide;
     rival: DuelSide;
-  };
+  } | null;
 };
 
 export type ProfileData = {
@@ -161,6 +167,67 @@ export const FRIENDS: Friend[] = [
   { username: '@luoji', level: 8, streakDays: 4, inDuel: false },
   { username: '@nadia.k', level: 14, streakDays: 3, inDuel: false },
 ];
+
+/**
+ * Perfil de un amigo, de `capturadiseño/Captura11.png`.
+ *
+ * `record` es el historial cara a cara **en orden**, del duelo más antiguo al
+ * más reciente: la tira de segmentos del diseño pinta uno por duelo, así que
+ * necesita el orden, no solo el marcador. El marcador (`5 — 3`) y el total
+ * («8 duels together») se derivan de aquí en vez de guardarse repetidos.
+ *
+ * `dailyAvgSteps` y `winRate` son estadísticas **del amigo**, no del cara a
+ * cara: por eso el 58 % del diseño no cuadra con su 5–3 contra ti.
+ */
+export type DuelOutcome = 'WIN' | 'LOSS';
+
+export type FriendProfile = {
+  username: string;
+  level: number;
+  streakDays: number;
+  /** Resultados tuyos contra ese amigo, del más antiguo al más reciente. */
+  record: DuelOutcome[];
+  /**
+   * `null` cuando no se conoce el dato, que no es lo mismo que cero: enseñar
+   * `0` diría que ese amigo no anda, en vez de que todavía no lo sabemos.
+   */
+  dailyAvgSteps: number | null;
+  /** Porcentaje de victorias del amigo en todos sus duelos, no solo contigo. */
+  winRate: number | null;
+};
+
+const ALEXRUIZ_PROFILE: FriendProfile = {
+  username: '@alexruiz',
+  level: 11,
+  streakDays: 12,
+  record: ['WIN', 'WIN', 'LOSS', 'WIN', 'LOSS', 'WIN', 'LOSS', 'WIN'],
+  dailyAvgSteps: 7318,
+  winRate: 58,
+};
+
+/**
+ * Solo `@alexruiz` sale medido de la captura. Los demás se derivan de su fila
+ * de la lista de amigos con un historial vacío: es preferible a inventarles un
+ * marcador que luego no cuadre con nada.
+ */
+export const FRIEND_PROFILES: FriendProfile[] = [ALEXRUIZ_PROFILE];
+
+export function findFriendProfile(username: string): FriendProfile | null {
+  const measured = FRIEND_PROFILES.find((profile) => profile.username === username);
+  if (measured) return measured;
+
+  const friend = FRIENDS.find((candidate) => candidate.username === username);
+  if (!friend) return null;
+
+  return {
+    username: friend.username,
+    level: friend.level,
+    streakDays: friend.streakDays,
+    record: [],
+    dailyAvgSteps: null,
+    winRate: null,
+  };
+}
 
 /**
  * Ajustes de demostración, de `capturadiseño/Captura14.png`. Los conmutadores

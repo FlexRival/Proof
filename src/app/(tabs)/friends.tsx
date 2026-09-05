@@ -1,14 +1,16 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { EmptyState } from '@/components/empty-state';
+import { SearchField } from '@/components/search-field';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Radius, Spacing, Typography } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { FRIEND_REQUESTS, FRIENDS, type Friend, type FriendRequest } from '@/lib/demo-data';
 
 /**
@@ -31,6 +33,14 @@ export default function FriendsScreen() {
   const visible = needle
     ? FRIENDS.filter((friend) => friend.username.toLowerCase().includes(needle))
     : FRIENDS;
+
+  // Sin un solo amigo la pantalla cambia entera: el diseño quita el buscador y
+  // el botón de la cabecera y deja únicamente la invitación a empezar. Filtrar
+  // una lista vacía no tiene sentido, y un buscador que nunca encuentra nada
+  // se lee como que la app está rota.
+  if (FRIENDS.length === 0 && FRIEND_REQUESTS.length === 0) {
+    return <FriendsEmptyScreen />;
+  }
 
   return (
     <ThemedView style={styles.screen}>
@@ -76,25 +86,39 @@ export default function FriendsScreen() {
 }
 
 /**
- * Buscador del diseño: bloque hundido con el campo dentro. No es un primitivo
- * porque de momento solo lo usa esta pantalla; si aparece en otra, sube a
- * `src/components/`.
+ * Sin amigos. Sigue a `capturadiseño/Captura10.png`: el duelo contra nadie —
+ * tu personaje, `VS`, y un hueco con interrogación donde iría el rival.
  */
-function SearchField({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-  const theme = useTheme();
-
+function FriendsEmptyScreen() {
   return (
-    <Card variant="sunken" style={styles.search}>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder="Search by username"
-        placeholderTextColor={theme.textDim}
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={[Typography.small, { color: theme.text }]}
-      />
-    </Card>
+    <ThemedView style={styles.screen}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ThemedText type="title">FRIENDS</ThemedText>
+
+          <EmptyState
+            title="BUILD YOUR RIVALRY"
+            message="Add friends to start competing."
+            actionLabel="Find friends"
+            note="Invite by username or share your link">
+            <View style={styles.versus}>
+              {/* Personajes (KAN-19): reservan el espacio del diseño. */}
+              <Card variant="sunken" style={styles.versusSlot} />
+
+              <ThemedText type="label" themeColor="textDim">
+                VS
+              </ThemedText>
+
+              <Card variant="sunken" style={styles.versusSlot}>
+                <ThemedText type="heading" themeColor="textDim" style={styles.versusUnknown}>
+                  ?
+                </ThemedText>
+              </Card>
+            </View>
+          </EmptyState>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
@@ -123,18 +147,38 @@ function FriendRow({ friend }: { friend: Friend }) {
       {/* Avatar (KAN-19). */}
       <Card variant={friend.inDuel ? 'rival' : 'sunken'} style={styles.avatar} />
 
-      <View style={styles.rowBody}>
+      {/*
+        Solo el cuerpo abre el perfil, no la card entera: si la fila completa
+        fuese pulsable, el botón de retar quedaría dentro de otra zona
+        pulsable y sería fácil abrir el perfil queriendo retar.
+      */}
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={`Open ${friend.username}'s profile`}
+        onPress={() =>
+          router.push({ pathname: '/friend-profile', params: { username: friend.username } })
+        }
+        style={styles.rowBody}>
         <ThemedText type="bodyBold">{friend.username}</ThemedText>
         <ThemedText type="caption" themeColor="textMuted">
           {`LV ${friend.level} · 🔥 ${friend.streakDays} DAYS`}
         </ThemedText>
-      </View>
+      </Pressable>
 
       {/*
         Con un duelo en curso el diseño no ofrece retar: pinta el estado. Un
         botón que fallaría al pulsarlo es peor que no tenerlo.
       */}
-      {friend.inDuel ? <Chip label="IN DUEL" tone="rival" /> : <Button label="Challenge" />}
+      {friend.inDuel ? (
+        <Chip label="IN DUEL" tone="rival" />
+      ) : (
+        <Button
+          label="Challenge"
+          onPress={() =>
+            router.push({ pathname: '/new-duel', params: { opponent: friend.username } })
+          }
+        />
+      )}
     </Card>
   );
 }
@@ -158,10 +202,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.three,
   },
-  search: {
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.md,
-  },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -175,4 +215,17 @@ const styles = StyleSheet.create({
   avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, padding: 0 },
   rowBody: { flex: 1, gap: Spacing.one },
   empty: { textAlign: 'center', paddingVertical: Spacing.four },
+  versus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+  },
+  versusSlot: {
+    flex: 1,
+    aspectRatio: 0.78,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  versusUnknown: { textAlign: 'center' },
 });

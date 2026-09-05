@@ -1,13 +1,16 @@
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Chip } from '@/components/chip';
+import { EmptyState } from '@/components/empty-state';
 import { MeterBar, type MeterTone } from '@/components/meter-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { XpProgress } from '@/components/xp-progress';
+import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
 import { formatCount } from '@/lib/format';
 import { demoLevelProgress, HOME_DEMO, type DuelSide } from '@/lib/demo-data';
@@ -30,7 +33,7 @@ export default function HomeScreen() {
   const stepsToGoal = Math.max(0, stepGoal - steps);
   // Las dos barras del duelo se miden contra quien va ganando, para que la del
   // líder salga llena y la diferencia se lea de un vistazo.
-  const duelLeader = Math.max(duel.you.steps, duel.rival.steps);
+  const duelLeader = duel ? Math.max(duel.you.steps, duel.rival.steps) : 0;
 
   return (
     <ThemedView style={styles.screen}>
@@ -48,51 +51,102 @@ export default function HomeScreen() {
             <Chip label={`LV ${level}`} tone="primary" />
           </View>
 
-          {/* Personaje (KAN-19): reserva el espacio del diseño. */}
-          <Card style={styles.character} />
+          {duel ? (
+            <>
+              {/* Personaje (KAN-19): reserva el espacio del diseño. */}
+              <Card style={styles.character} />
 
-          <ThemedText type="heading" style={styles.level}>{`LEVEL ${level}`}</ThemedText>
+              <ThemedText type="heading" style={styles.level}>{`LEVEL ${level}`}</ThemedText>
 
-          <XpProgress
-            level={level}
-            xpIntoLevel={xpIntoLevel}
-            xpForNextLevel={xpForNextLevel}
-          />
+              <XpProgress
+                level={level}
+                xpIntoLevel={xpIntoLevel}
+                xpForNextLevel={xpForNextLevel}
+              />
 
+              <Card style={styles.block}>
+                <ThemedText type="label" themeColor="textDim">
+                  TODAY&apos;S STEPS
+                </ThemedText>
+                <ThemedText type="title" themeColor="steps">
+                  {formatCount(steps)}
+                </ThemedText>
+                <ThemedText type="caption" themeColor="textMuted">
+                  {`+${formatCount(stepsToGoal)} to goal · ${formatCount(stepGoal)}`}
+                </ThemedText>
+                <MeterBar value={steps} max={stepGoal} tone="steps" />
+              </Card>
 
-          <Card style={styles.block}>
-            <ThemedText type="label" themeColor="textDim">
-              TODAY&apos;S STEPS
-            </ThemedText>
-            <ThemedText type="title" themeColor="steps">
-              {formatCount(steps)}
-            </ThemedText>
-            <ThemedText type="caption" themeColor="textMuted">
-              {`+${formatCount(stepsToGoal)} to goal · ${formatCount(stepGoal)}`}
-            </ThemedText>
-            <MeterBar value={steps} max={stepGoal} tone="steps" />
-          </Card>
+              <Card variant="highlight" style={styles.block}>
+                <View style={styles.spread}>
+                  <ThemedText type="label" themeColor="primary">
+                    CURRENT DUEL
+                  </ThemedText>
+                  <ThemedText type="label" themeColor="textMuted">
+                    {duel.endsIn}
+                  </ThemedText>
+                </View>
 
-          <Card variant="highlight" style={styles.block}>
-            <View style={styles.spread}>
-              <ThemedText type="label" themeColor="primary">
-                CURRENT DUEL
-              </ThemedText>
-              <ThemedText type="label" themeColor="textMuted">
-                {duel.endsIn}
-              </ThemedText>
-            </View>
+                <DuelSideRow side={duel.you} tone="power" leader={duelLeader} />
+                <DuelSideRow side={duel.rival} tone="rival" leader={duelLeader} />
 
-            <DuelSideRow side={duel.you} tone="power" leader={duelLeader} />
-            <DuelSideRow side={duel.rival} tone="rival" leader={duelLeader} />
+                <Button label="View duel" />
+              </Card>
 
-            <Button label="View duel" />
-          </Card>
-
-          <Button label="Challenge a friend" variant="secondary" />
+              <Button
+                label="Challenge a friend"
+                variant="secondary"
+                onPress={() => router.push(ROUTES.newDuel.href)}
+              />
+            </>
+          ) : (
+            <NoDuelState steps={steps} />
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
+  );
+}
+
+/**
+ * Pantalla principal sin ningún duelo en curso. Sigue a
+ * `capturadiseño/Captura4.png`.
+ *
+ * Cae el progreso de XP y la card del duelo, y los pasos pasan a una card
+ * compacta que explica para qué sirven: sin duelo no se gana XP, así que
+ * enseñar la barra de XP aquí sería enseñar algo que no se mueve.
+ */
+function NoDuelState({ steps }: { steps: number }) {
+  return (
+    <>
+      <EmptyState
+        title="NO ACTIVE DUELS"
+        message="Challenge someone and prove who's got it."
+        actionLabel="Challenge a friend"
+        onAction={() => router.push(ROUTES.newDuel.href)}>
+        {/* Personaje inactivo (KAN-19): reserva el espacio del diseño. */}
+        <Card variant="sunken" style={styles.idleCharacter} />
+      </EmptyState>
+
+      {/*
+        Los pasos siguen contando sin duelo, pero no valen XP. La card lo dice
+        en vez de callarlo: si no, el contador parece roto.
+      */}
+      <Card style={styles.idleSteps}>
+        <View style={styles.idleStepsBody}>
+          <ThemedText type="label" themeColor="textDim">
+            TODAY&apos;S STEPS
+          </ThemedText>
+          <ThemedText type="title" themeColor="steps">
+            {formatCount(steps)}
+          </ThemedText>
+        </View>
+
+        <ThemedText type="caption" themeColor="textMuted" style={styles.idleStepsNote}>
+          Win a duel to turn steps into XP
+        </ThemedText>
+      </Card>
+    </>
   );
 }
 
@@ -168,6 +222,24 @@ const styles = StyleSheet.create({
     width: '50%',
     alignSelf: 'center',
     aspectRatio: 1,
+  },
+  idleCharacter: {
+    // Sin duelo el personaje manda en la pantalla: en `Captura4.png` es más
+    // alto que ancho y ocupa más que el de la pantalla con duelo.
+    width: '60%',
+    alignSelf: 'center',
+    aspectRatio: 0.82,
+  },
+  idleSteps: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  idleStepsBody: { gap: Spacing.one },
+  idleStepsNote: {
+    flexShrink: 1,
+    textAlign: 'right',
   },
   level: {
     textAlign: 'center',
