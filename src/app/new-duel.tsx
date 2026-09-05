@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { Chip } from '@/components/chip';
-import { SearchField } from '@/components/search-field';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { Chip } from '@/components/atoms/chip';
+import { SearchField } from '@/components/molecules/search-field';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
@@ -18,7 +18,7 @@ import { levelProgress } from '@/lib/xp';
 import type { Profile } from '@/repositories';
 
 /**
- * Crear un duelo. Sigue a `capturadiseño/Captura7.png`.
+ * Crear un duelo.
  *
  * Es **una sola ruta con tres pasos en estado local**, no tres rutas: el
  * diseño trae su propia barra de progreso y su botón de volver retrocede de

@@ -2,15 +2,15 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/character-avatar';
-import { Chip } from '@/components/chip';
-import { EmptyState } from '@/components/empty-state';
-import { MeterBar, type MeterTone } from '@/components/meter-bar';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { XpProgress } from '@/components/xp-progress';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/molecules/character-avatar';
+import { Chip } from '@/components/atoms/chip';
+import { EmptyState } from '@/components/organisms/empty-state';
+import { MeterBar, type MeterTone } from '@/components/atoms/meter-bar';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
+import { XpProgress } from '@/components/organisms/xp-progress';
 import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
 import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
@@ -22,7 +22,7 @@ import type { EquippedCosmetics } from '@/repositories';
 
 /**
  * Pantalla principal: quién eres, tu nivel, los pasos de hoy y el duelo en
- * curso. Sigue a `capturadiseño/Captura3.png`.
+ * curso.
  *
  * Identidad (username, nivel, XP) y el avatar equipado son **datos reales de
  * la sesión** (`useProfile` / `useMyEquippedCosmetics`). Pasos y duelo
@@ -130,8 +130,7 @@ export default function HomeScreen() {
 }
 
 /**
- * Pantalla principal sin ningún duelo en curso. Sigue a
- * `capturadiseño/Captura4.png`.
+ * Pantalla principal sin ningún duelo en curso.
  *
  * Cae el progreso de XP y la card del duelo, y los pasos pasan a una card
  * compacta que explica para qué sirven: sin duelo no se gana XP, así que
@@ -232,15 +231,15 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   character: {
-    // Medido en `Captura3.png`: el recuadro del personaje ocupa la mitad del
-    // ancho del contenido y va centrado, no a sangre.
+    // Medido en el diseño: el recuadro del personaje ocupa la mitad del ancho
+    // del contenido y va centrado, no a sangre.
     width: '50%',
     alignSelf: 'center',
     aspectRatio: 1,
   },
   idleCharacter: {
-    // Sin duelo el personaje manda en la pantalla: en `Captura4.png` es más
-    // alto que ancho y ocupa más que el de la pantalla con duelo.
+    // Sin duelo el personaje manda en la pantalla: en el diseño es más alto
+    // que ancho y ocupa más que el de la pantalla con duelo.
     width: '60%',
     alignSelf: 'center',
     aspectRatio: 0.82,

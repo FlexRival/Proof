@@ -1,4 +1,4 @@
-import AppTabs from '@/components/app-tabs';
+import AppTabs from '@/components/organisms/app-tabs';
 
 /**
  * Layout del grupo de pestañas. El grupo `(tabs)` no aparece en la URL: las

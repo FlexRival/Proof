@@ -28,9 +28,9 @@ const FILLS: Record<MeterTone, ThemeColor> = {
   steps: 'steps',
   power: 'primary',
   rival: 'defeat',
-  // Medido en `Captura5.png`: cuando vas por detrás en un duelo, la fila de la
-  // lista pinta la barra en gris (#767C8C, el Text Muted original del diseño),
-  // no en Rival. El rojo se reserva para la cifra, no para la barra entera.
+  // En el diseño, cuando vas por detrás en un duelo la fila de la lista pinta
+  // la barra en gris (#767C8C, el Text Muted original del diseño), no en
+  // Rival. El rojo se reserva para la cifra, no para la barra entera.
   muted: 'textMuted',
 };
 

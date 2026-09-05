@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
-import { Card } from '@/components/card';
-import { ThemedText } from '@/components/themed-text';
+import { Card } from '@/components/atoms/card';
+import { ThemedText } from '@/components/atoms/themed-text';
 import { Spacing, type ThemeColor } from '@/constants/theme';
 
 /**

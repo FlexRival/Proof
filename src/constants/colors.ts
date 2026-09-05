@@ -78,8 +78,8 @@ export const Palette = {
   rivalTint: 'rgba(255, 92, 56, 0.12)',
   neutralTint: 'rgba(255, 255, 255, 0.05)',
   /**
-   * Pista de la barra de objetivo de pasos. Medida sobre `Captura3.png`: la
-   * parte vacía da #2C2E33 sobre la card #13151C, o sea blanco al 10 % (0.106,
+   * Pista de la barra de objetivo de pasos. Medida sobre el diseño: la parte
+   * vacía da #2C2E33 sobre la card #13151C, o sea blanco al 10 % (0.106,
    * 0.107 y 0.101 por canal — consistente, luego es alfa y no un gris opaco).
    * Más clara que `hairline` (7 %), que es la pista de la barra de XP.
    */

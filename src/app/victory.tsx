@@ -2,12 +2,12 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { LevelUpBadge } from '@/components/level-up-badge';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { XpBar } from '@/components/xp-bar';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { LevelUpBadge } from '@/components/molecules/level-up-badge';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
+import { XpBar } from '@/components/molecules/xp-bar';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
 import { formatCount } from '@/lib/format';
@@ -15,8 +15,7 @@ import { parseVictory } from '@/lib/victory';
 import { XP_PER_LEVEL, xpForDuelWin } from '@/lib/xp';
 
 /**
- * Celebración de un duelo ganado. Sigue al panel izquierdo de
- * `capturadiseño/Captura8.png`.
+ * Celebración de un duelo ganado.
  *
  * Se abre con el resultado en la URL
  * (`/victory?opponent=@alexruiz&steps=8742&days=3`). Si el duelo además hizo

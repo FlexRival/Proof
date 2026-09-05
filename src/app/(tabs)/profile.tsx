@@ -2,12 +2,12 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/character-avatar';
-import { StatTile } from '@/components/stat-tile';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { XpProgress } from '@/components/xp-progress';
+import { Button } from '@/components/atoms/button';
+import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/molecules/character-avatar';
+import { StatTile } from '@/components/molecules/stat-tile';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
+import { XpProgress } from '@/components/organisms/xp-progress';
 import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
@@ -18,7 +18,6 @@ import { levelProgress } from '@/lib/xp';
 
 /**
  * Perfil del jugador: personaje, nivel y su historial de duelos.
- * Sigue a `capturadiseño/Captura12.png`.
  *
  * Identidad (username, nivel, XP, racha) y el avatar equipado son **datos
  * reales de la sesión** (`useProfile` / `useMyEquippedCosmetics`). Victorias,

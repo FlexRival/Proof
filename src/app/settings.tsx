@@ -5,12 +5,12 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/character-avatar';
-import { Notice } from '@/components/notice';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/molecules/character-avatar';
+import { Notice } from '@/components/molecules/notice';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Palette, Radius, Spacing } from '@/constants/theme';
 import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
@@ -22,7 +22,7 @@ import { levelProgress } from '@/lib/xp';
 import { profileRepository, RepositoryError, type EquippedCosmetics } from '@/repositories';
 
 /**
- * Ajustes. Sigue a `capturadiseño/Captura14.png`.
+ * Ajustes.
  *
  * Identidad (username, nivel, fecha de alta) y avatar son **datos reales de
  * la sesión**. El resto — conmutadores de notificaciones, origen de pasos —

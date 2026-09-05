@@ -2,12 +2,12 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { Chip } from '@/components/chip';
-import { StatTile } from '@/components/stat-tile';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { Chip } from '@/components/atoms/chip';
+import { StatTile } from '@/components/molecules/stat-tile';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -15,7 +15,7 @@ import { findFriendProfile, type DuelOutcome, type FriendProfile } from '@/lib/d
 import { formatCount } from '@/lib/format';
 
 /**
- * Perfil de un amigo. Sigue a `capturadiseño/Captura11.png`.
+ * Perfil de un amigo.
  *
  * Se abre con el usuario en la URL (`/friend-profile?username=@alexruiz`),
  * igual que `victory` y `new-duel`. Un usuario que no existe no tiene perfil

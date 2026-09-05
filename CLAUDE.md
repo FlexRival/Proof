@@ -61,8 +61,20 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
   a Chakra. Se cargan en `src/app/_layout.tsx` desde `src/constants/fonts.ts`.
 - **Primitivos de UI:** `Button`, `Card`, `Chip`, `SegmentedControl`, `XpBar`,
   `Notice`, `SearchField` (filtro de listas) y `TextField` (campo de
-  formulario genérico: login, altas) en `src/components/`. Monta las
-  pantallas con ellos antes de escribir un `borderRadius` a mano.
+  formulario genérico: login, altas). Monta las pantallas con ellos antes de
+  escribir un `borderRadius` a mano.
+- **Componentes por diseño atómico.** `src/components/` está partido en
+  `atoms/` (indivisibles: `ThemedText`, `ThemedView`, `Button`, `Card`,
+  `Chip`, `MeterBar`, `AnimatedSplashOverlay`), `molecules/` (un puñado de
+  átomos con un solo trabajo: `TextField`, `SearchField`, `SegmentedControl`,
+  `StatTile`, `Notice`, `XpBar`, `LevelUpBadge`, `CharacterAvatar`) y
+  `organisms/` (secciones completas: `XpProgress`, `EmptyState`, `AppTabs`).
+  Un componente nuevo va al nivel de lo que compone, y **nunca importa hacia
+  arriba** — un átomo no puede importar una molécula.
+  Las pantallas de `src/app/` son las *pages*: no se mueven a una carpeta
+  `pages/` porque esa carpeta **es** el enrutado de Expo Router y renombrarla
+  cambiaría todas las rutas de la app. `src/components/README.md` tiene la
+  regla completa.
 - **Autenticación:** email/contraseña vía Supabase Auth
   (`src/app/login.tsx`), sin proveedores OAuth configurados todavía.
   `src/app/_layout.tsx` usa `Stack.Protected` para mostrar `login` o el

@@ -212,20 +212,20 @@ sistema y lo avisa por consola en vez de quedarse en negro para siempre.
 
 ## Primitivos
 
-Los componentes de la card COMPONENTS del diseño, en `src/components/`. Una
-pantalla debería poder montarse con estos sin volver a escribir a mano un
-`borderRadius` ni un `borderColor`.
+Los componentes de la card COMPONENTS del diseño, en `src/components/`,
+ordenados por diseño atómico. Una pantalla debería poder montarse con estos
+sin volver a escribir a mano un `borderRadius` ni un `borderColor`.
 
-| Componente          | Archivo                   | Variantes |
-|---------------------|---------------------------|-----------|
-| `Button`            | `button.tsx`              | `primary` (degradado Power), `secondary` (contorno), `ghost` |
-| `Card`              | `card.tsx`                | `default`, `raised`, `sunken`, `highlight`, `rival`, `locked` |
-| `Chip`              | `chip.tsx`                | `neutral`, `primary`, `rival`, con punto de estado opcional |
-| `SegmentedControl`  | `segmented-control.tsx`   | Filtro de pantalla (ACTIVE / PENDING / HISTORY), controlado |
-| `Notice`            | `notice.tsx`              | `primary`, `rival`, `info` |
-| `XpBar`             | `xp-bar.tsx`              | Rótulo + `2,450 / 3,000` + pista con degradado XP |
-| `LevelUpBadge`      | `level-up-badge.tsx`      | Transición `11 → 12` animada de la subida de nivel |
-| `MeterBar`          | `meter-bar.tsx`           | Barra lisa sin rótulos: `steps`, `power`, `rival`, `muted` |
+| Componente          | Archivo                              | Variantes |
+|---------------------|--------------------------------------|-----------|
+| `Button`            | `atoms/button.tsx`                   | `primary` (degradado Power), `secondary` (contorno), `ghost` |
+| `Card`              | `atoms/card.tsx`                     | `default`, `raised`, `sunken`, `highlight`, `rival`, `locked` |
+| `Chip`              | `atoms/chip.tsx`                     | `neutral`, `primary`, `rival`, con punto de estado opcional |
+| `MeterBar`          | `atoms/meter-bar.tsx`                | Barra lisa sin rótulos: `steps`, `power`, `rival`, `muted` |
+| `SegmentedControl`  | `molecules/segmented-control.tsx`    | Filtro de pantalla (ACTIVE / PENDING / HISTORY), controlado |
+| `Notice`            | `molecules/notice.tsx`               | `primary`, `rival`, `info` |
+| `XpBar`             | `molecules/xp-bar.tsx`               | Rótulo + `2,450 / 3,000` + pista con degradado XP |
+| `LevelUpBadge`      | `molecules/level-up-badge.tsx`       | Transición `11 → 12` animada de la subida de nivel |
 
 Superficies medidas en la lámina, por si se rehacen estos componentes:
 `Notice` y el segmento activo de `SegmentedControl` van sobre `#1B1E27`

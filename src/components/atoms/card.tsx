@@ -1,6 +1,6 @@
 import { StyleSheet, type ViewProps } from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { Radius, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 

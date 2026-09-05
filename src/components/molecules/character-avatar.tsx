@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { Card } from '@/components/card';
-import { ThemedText } from '@/components/themed-text';
+import { Card } from '@/components/atoms/card';
+import { ThemedText } from '@/components/atoms/themed-text';
 import { COSMETIC_ASSETS } from '@/constants/cosmetic-assets';
 import { Radius } from '@/constants/theme';
 import type { CosmeticSlot, EquippedCosmetics } from '@/repositories';

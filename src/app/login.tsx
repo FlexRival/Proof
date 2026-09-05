@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Notice } from '@/components/notice';
-import { SegmentedControl, type SegmentedOption } from '@/components/segmented-control';
-import { TextField } from '@/components/text-field';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/atoms/button';
+import { Notice } from '@/components/molecules/notice';
+import { SegmentedControl, type SegmentedOption } from '@/components/molecules/segmented-control';
+import { TextField } from '@/components/molecules/text-field';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { profileRepository, RepositoryError } from '@/repositories';
 

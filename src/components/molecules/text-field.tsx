@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
-import { Card } from '@/components/card';
-import { ThemedText } from '@/components/themed-text';
+import { Card } from '@/components/atoms/card';
+import { ThemedText } from '@/components/atoms/themed-text';
 import { Radius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 

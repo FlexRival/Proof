@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { MeterBar } from '@/components/meter-bar';
-import { Notice } from '@/components/notice';
-import { SegmentedControl, type SegmentedOption } from '@/components/segmented-control';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { MeterBar } from '@/components/atoms/meter-bar';
+import { Notice } from '@/components/molecules/notice';
+import { SegmentedControl, type SegmentedOption } from '@/components/molecules/segmented-control';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -22,8 +22,7 @@ import {
 import { formatCount } from '@/lib/format';
 
 /**
- * Duelos, con sus tres filtros. Sigue a `capturadiseño/Captura5.png` (activos)
- * y `Captura6.png` (pendientes).
+ * Duelos, con sus tres filtros: activos, pendientes y enviados.
  *
  * **Sin datos todavía**, y a propósito: falta un `duel-repository.ts` que
  * envuelva las RPC `respond_to_duel` y compañía, así que `ACTIVE_DUELS` /

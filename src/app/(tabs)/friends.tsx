@@ -3,19 +3,18 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { Chip } from '@/components/chip';
-import { EmptyState } from '@/components/empty-state';
-import { SearchField } from '@/components/search-field';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { Chip } from '@/components/atoms/chip';
+import { EmptyState } from '@/components/organisms/empty-state';
+import { SearchField } from '@/components/molecules/search-field';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { FRIEND_REQUESTS, FRIENDS, type Friend, type FriendRequest } from '@/lib/demo-data';
 
 /**
  * Amigos: solicitudes pendientes y la lista, con el atajo para retar.
- * Sigue a `capturadiseño/Captura9.png`.
  *
  * **Datos de demostración todavía.** Aceptar, rechazar y retar no mutan nada:
  * falta un `friendship-repository.ts` que envuelva las RPC
@@ -86,8 +85,8 @@ export default function FriendsScreen() {
 }
 
 /**
- * Sin amigos. Sigue a `capturadiseño/Captura10.png`: el duelo contra nadie —
- * tu personaje, `VS`, y un hueco con interrogación donde iría el rival.
+ * Sin amigos: el duelo contra nadie — tu personaje, `VS`, y un hueco con
+ * interrogación donde iría el rival.
  */
 function FriendsEmptyScreen() {
   return (

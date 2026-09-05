@@ -1,7 +1,7 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { XpBar } from '@/components/xp-bar';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { XpBar } from '@/components/molecules/xp-bar';
 import { Spacing } from '@/constants/theme';
 import { formatCount } from '@/lib/format';
 

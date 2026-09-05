@@ -2,12 +2,12 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { Card } from '@/components/card';
-import { LevelUpBadge } from '@/components/level-up-badge';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { XpBar } from '@/components/xp-bar';
+import { Button } from '@/components/atoms/button';
+import { Card } from '@/components/atoms/card';
+import { LevelUpBadge } from '@/components/molecules/level-up-badge';
+import { ThemedText } from '@/components/atoms/themed-text';
+import { ThemedView } from '@/components/atoms/themed-view';
+import { XpBar } from '@/components/molecules/xp-bar';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { parseLevelUp } from '@/lib/level-up';

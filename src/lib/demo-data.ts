@@ -40,8 +40,8 @@ export type HomeData = {
   /**
    * `null` cuando no hay ningún duelo en curso. No es un caso raro: es el
    * estado de una cuenta recién hecha, y el diseño le dedica una pantalla
-   * entera (`capturadiseño/Captura4.png`). Nullable en el tipo para que la
-   * pantalla no pueda olvidarse de cubrirlo.
+   * entera. Nullable en el tipo para que la pantalla no pueda olvidarse de
+   * cubrirlo.
    */
   duel: {
     /** Cuenta atrás ya formateada. La dará el servidor, no se calcula aquí. */
@@ -176,11 +176,11 @@ export function findFriendProfile(username: string): FriendProfile | null {
 }
 
 /**
- * Ajustes de demostración, de `capturadiseño/Captura14.png`. Los conmutadores
- * son estado local de la pantalla: todavía no hay dónde guardarlos.
+ * Ajustes de demostración. Los conmutadores son estado local de la pantalla:
+ * todavía no hay dónde guardarlos.
  *
- * `stepTracking` dice la verdad (`NOT CONNECTED`), no lo que rotulaba la
- * captura (`CONNECTED`): no hay HealthKit/Health Connect todavía (ver
+ * `stepTracking` dice la verdad (`NOT CONNECTED`), no lo que rotulaba el
+ * diseño (`CONNECTED`): no hay HealthKit/Health Connect todavía (ver
  * `docs/conteo-de-pasos.md`), así que afirmar que sí está conectado sería la
  * misma mentira que los pasos de hoy. `dailyStepGoal` sí queda con un valor:
  * es un objetivo configurable, no una medición.

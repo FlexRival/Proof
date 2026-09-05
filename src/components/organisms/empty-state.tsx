@@ -1,14 +1,13 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '@/components/button';
-import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/atoms/button';
+import { ThemedText } from '@/components/atoms/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 /**
  * Pantalla vacía del diseño: ilustración, titular, una línea de explicación y
- * la acción que la resuelve. Sigue a `capturadiseño/Captura4.png` (home sin
- * duelos) y `Captura10.png` (sin amigos).
+ * la acción que la resuelve. Cubre el home sin duelos y la lista sin amigos.
  *
  * Las dos maquetas comparten estructura y solo cambian la ilustración y el
  * copy, así que la ilustración entra por `children` en vez de intentar cubrir

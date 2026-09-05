@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AnimatedSplashOverlay } from '@/components/atoms/animated-icon';
 import { FONT_ASSETS } from '@/constants/theme';
 import { useProfile } from '@/hooks/use-profile';
 

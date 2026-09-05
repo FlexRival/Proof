@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/components/atoms/themed-text';
 import { Gradients, Motion, Radius, Spacing } from '@/constants/theme';
 import { formatCount } from '@/lib/format';
 import { useTheme } from '@/hooks/use-theme';
