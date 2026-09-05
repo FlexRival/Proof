@@ -58,6 +58,7 @@ export default function RootLayout() {
           la lista de amigos y se vuelve con el botón de atrás, como ajustes.
         */}
         <Stack.Screen name="friend-profile" />
+        <Stack.Screen name="customize-character" />
       </Stack>
     </ThemeProvider>
   );

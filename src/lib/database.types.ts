@@ -27,6 +27,10 @@ export type ClanJoinRequestStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCE
 
 export type ClanWarStatus = 'PENDING' | 'ACTIVE' | 'FINISHED' | 'DECLINED';
 
+export type CosmeticSlot = 'SKIN' | 'HAIR' | 'OUTFIT' | 'HEADWEAR' | 'ACCESSORY';
+
+export type CosmeticUnlockType = 'FREE' | 'LEVEL' | 'PRO';
+
 // ---------------------------------------------------------------------------
 // Filas
 // ---------------------------------------------------------------------------
@@ -146,6 +150,30 @@ export type ClanLeaderboardRow = {
   member_count: number;
 };
 
+export type CosmeticItemRow = {
+  id: string;
+  slot: CosmeticSlot;
+  name: string;
+  unlock_type: CosmeticUnlockType;
+  /** Solo no nulo cuando `unlock_type === 'LEVEL'`. */
+  unlock_level: number | null;
+  sort_order: number;
+  created_at: string;
+};
+
+export type UserCosmeticRow = {
+  user_id: string;
+  item_id: string;
+  unlocked_at: string;
+};
+
+export type UserEquippedCosmeticRow = {
+  user_id: string;
+  slot: CosmeticSlot;
+  item_id: string;
+  equipped_at: string;
+};
+
 // ---------------------------------------------------------------------------
 // Esquema
 // ---------------------------------------------------------------------------
@@ -203,6 +231,9 @@ export type Database = {
       clan_invites: ReadOnlyTable<ClanInviteRow>;
       clan_wars: ReadOnlyTable<ClanWarRow>;
       clan_war_participants: ReadOnlyTable<ClanWarParticipantRow>;
+      cosmetic_items: ReadOnlyTable<CosmeticItemRow>;
+      user_cosmetics: ReadOnlyTable<UserCosmeticRow>;
+      user_equipped_cosmetics: ReadOnlyTable<UserEquippedCosmeticRow>;
     };
     Views: {
       clan_leaderboard: {
@@ -298,12 +329,18 @@ export type Database = {
       };
       sync_clan_war_steps: { Args: { p_war_id: string }; Returns: ClanWarRow };
       resolve_clan_war: { Args: { p_war_id: string }; Returns: ClanWarRow };
+
+      // ---- Cosméticos ----
+      equip_cosmetic: { Args: { p_item_id: string }; Returns: UserEquippedCosmeticRow };
+      unequip_cosmetic: { Args: { p_slot: CosmeticSlot }; Returns: undefined };
     };
     Enums: {
       duel_status: DuelStatus;
       clan_role: ClanRole;
       clan_join_request_status: ClanJoinRequestStatus;
       clan_war_status: ClanWarStatus;
+      cosmetic_slot: CosmeticSlot;
+      cosmetic_unlock_type: CosmeticUnlockType;
     };
     CompositeTypes: Record<never, never>;
   };

@@ -27,6 +27,10 @@ import { formatCompact, formatCount } from '@/lib/format';
  *   `avatar_class`), así que aquí va el rango, como en la pantalla principal.
  * - El botón de ajustes de la cabecera es un icono circular en la captura.
  *   No hay sistema de iconos todavía, así que va como botón con texto.
+ *
+ * "Customize character" sí navega a una pantalla real
+ * (`src/app/customize-character.tsx`) con sesión y repositorio de verdad —
+ * a diferencia del resto de esta pantalla, que sigue en `PROFILE_DEMO`.
  */
 export default function ProfileScreen() {
   const { username, rank, wins, losses, streak, totalSteps } = PROFILE_DEMO;
@@ -73,13 +77,10 @@ export default function ProfileScreen() {
             <StatTile label="TOTAL STEPS" value={formatCompact(totalSteps)} />
           </View>
 
-          {/*
-            La pantalla de personalización está diseñada (`Captura13.png`) pero
-            no construida. El botón va deshabilitado en vez de llevar a ningún
-            sitio: un callejón sin salida se nota menos que un botón apagado, y
-            se nota peor.
-          */}
-          <Button label="Customize character" disabled />
+          <Button
+            label="Customize character"
+            onPress={() => router.push(ROUTES.customizeCharacter.href)}
+          />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

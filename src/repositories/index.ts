@@ -11,13 +11,30 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { CachedCosmeticsRepository } from '@/repositories/cached-cosmetics-repository';
 import { CachedProfileRepository } from '@/repositories/cached-profile-repository';
+import type { CosmeticsRepository } from '@/repositories/cosmetics-repository';
 import type { ProfileRepository } from '@/repositories/profile-repository';
+import { SupabaseCosmeticsRepository } from '@/repositories/supabase/cosmetics-repository';
 import { SupabaseProfileRepository } from '@/repositories/supabase/profile-repository';
 
 export type { Profile, ProfileRepository } from '@/repositories/profile-repository';
+export type {
+  CosmeticItem,
+  CosmeticsRepository,
+  CosmeticSlot,
+  CosmeticUnlockType,
+  EquippedCosmetics,
+} from '@/repositories/cosmetics-repository';
 export { RepositoryError } from '@/repositories/errors';
 
 export const profileRepository: ProfileRepository = new CachedProfileRepository(
   new SupabaseProfileRepository(supabase),
+);
+
+// El catálogo de cosméticos es contenido de referencia (no cambia salvo que
+// se añadan ítems nuevos): 30 minutos de caché en vez de los 30s por defecto.
+export const cosmeticsRepository: CosmeticsRepository = new CachedCosmeticsRepository(
+  new SupabaseCosmeticsRepository(supabase),
+  30 * 60_000,
 );
