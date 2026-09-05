@@ -7,28 +7,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/atoms/button';
 import { Card } from '@/components/atoms/card';
-import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/molecules/character-avatar';
 import { Notice } from '@/components/molecules/notice';
 import { ThemedText } from '@/components/atoms/themed-text';
 import { ThemedView } from '@/components/atoms/themed-view';
 import { ROUTES } from '@/constants/routes';
 import { MaxContentWidth, Palette, Radius, Spacing } from '@/constants/theme';
-import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
 import { useProfile } from '@/hooks/use-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { SETTINGS_DEMO } from '@/lib/demo-data';
 import { formatCount, formatJoinDate } from '@/lib/format';
 import { levelProgress } from '@/lib/xp';
-import { profileRepository, RepositoryError, type EquippedCosmetics } from '@/repositories';
+import { profileRepository, RepositoryError } from '@/repositories';
 
 /**
  * Ajustes.
  *
- * Identidad (username, nivel, fecha de alta) y avatar son **datos reales de
- * la sesión**. El resto — conmutadores de notificaciones, origen de pasos —
- * sigue de mentira: los conmutadores porque no hay tabla de preferencias
- * (guardarlos sería inventarse la capa de datos), y el origen de pasos
- * porque la captura de pasos no está implementada (`docs/conteo-de-pasos.md`).
+ * Identidad (username, nivel, fecha de alta, foto de perfil) son **datos
+ * reales de la sesión**. No hay ningún personaje RPG que dibuje encima — se
+ * descartó a propósito — así que sin foto subida el hueco se queda vacío
+ * (`ProfilePhoto`). El resto — conmutadores de notificaciones, origen de
+ * pasos — sigue de mentira: los conmutadores porque no hay tabla de
+ * preferencias (guardarlos sería inventarse la capa de datos), y el origen de
+ * pasos porque la captura de pasos no está implementada
+ * (`docs/conteo-de-pasos.md`).
  *
  * Esta pantalla fue la que destapó que las rutas fuera de las pestañas eran
  * inalcanzables: existía como archivo y abrirla pintaba la pantalla principal.
@@ -43,7 +44,6 @@ export default function SettingsScreen() {
   const [avatarError, setAvatarError] = useState<string | null>(null);
 
   const { state: profileState, reload: reloadProfile } = useProfile();
-  const { state: equippedState } = useMyEquippedCosmetics();
 
   async function handleLogOut() {
     setLogOutError(null);
@@ -109,7 +109,6 @@ export default function SettingsScreen() {
 
   const { username, xp, createdAt, avatarUrl } = profileState.data;
   const { level } = levelProgress(xp);
-  const equipped = equippedState.status === 'ready' ? equippedState.data : EMPTY_EQUIPPED_COSMETICS;
 
   return (
     <ThemedView style={styles.screen}>
@@ -124,7 +123,7 @@ export default function SettingsScreen() {
 
           <Card style={styles.identity}>
             <Pressable onPress={handleChangePhoto} disabled={avatarUploading}>
-              <ProfilePhoto avatarUrl={avatarUrl} equipped={equipped} />
+              <ProfilePhoto avatarUrl={avatarUrl} />
             </Pressable>
 
             <View style={styles.identityBody}>
@@ -194,19 +193,18 @@ function goBack() {
 }
 
 /**
- * Foto real si el usuario ya subió una; si no, el personaje de cosméticos
- * como respaldo — no un círculo vacío. Son dos conceptos distintos a
- * propósito: esta es tu identidad de cuenta, `CharacterAvatar` (Home, Perfil)
- * es tu personaje del juego.
+ * Foto real si el usuario ya subió una; si no, un hueco reservado. No hay
+ * ningún personaje RPG que la sustituya — se descartó a propósito, junto con
+ * el sistema de cosméticos que lo dibujaba.
  */
-type ProfilePhotoProps = { avatarUrl: string | null; equipped: EquippedCosmetics };
+type ProfilePhotoProps = { avatarUrl: string | null };
 
-function ProfilePhoto({ avatarUrl, equipped }: ProfilePhotoProps) {
+function ProfilePhoto({ avatarUrl }: ProfilePhotoProps) {
   if (avatarUrl) {
     return <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" />;
   }
 
-  return <CharacterAvatar equipped={equipped} size={AVATAR_SIZE} />;
+  return <Card variant="sunken" style={styles.avatarImage} />;
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

@@ -3,29 +3,31 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/atoms/button';
-import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/molecules/character-avatar';
+import { Card } from '@/components/atoms/card';
 import { StatTile } from '@/components/molecules/stat-tile';
 import { ThemedText } from '@/components/atoms/themed-text';
 import { ThemedView } from '@/components/atoms/themed-view';
 import { XpProgress } from '@/components/organisms/xp-progress';
 import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
 import { useProfile } from '@/hooks/use-profile';
 import { PROFILE_DEMO } from '@/lib/demo-data';
 import { formatCompact, formatCount } from '@/lib/format';
 import { levelProgress } from '@/lib/xp';
 
 /**
- * Perfil del jugador: personaje, nivel y su historial de duelos.
+ * Perfil del jugador: nivel y su historial de duelos.
  *
- * Identidad (username, nivel, XP, racha) y el avatar equipado son **datos
- * reales de la sesión** (`useProfile` / `useMyEquippedCosmetics`). Victorias,
- * derrotas, duelos y pasos totales **siguen en `PROFILE_DEMO`**: no hay
- * repositorio de duelos/pasos todavía (ver los comentarios de
- * `src/lib/demo-data.ts`) — mostrar un 0 falso ahí sería tan de mentira como
- * el número de la captura, así que se quedan como están hasta que exista esa
- * pieza.
+ * **No hay ningún personaje RPG que represente al usuario** (se descartó a
+ * propósito, junto con el sistema de cosméticos que lo dibujaba) — el
+ * recuadro de la cabecera es un hueco reservado, no un avatar.
+ *
+ * Identidad (username, nivel, XP, racha) es **dato real de la sesión**
+ * (`useProfile`). Victorias, derrotas, duelos y pasos totales **siguen en
+ * `PROFILE_DEMO`**: no hay repositorio de duelos/pasos todavía (ver los
+ * comentarios de `src/lib/demo-data.ts`) — mostrar un 0 falso ahí sería tan de
+ * mentira como el número de la captura, así que se quedan como están hasta
+ * que exista esa pieza.
  *
  * Dos desvíos conscientes respecto a la captura:
  * - La captura rotula `@marcodev · VANGUARD`, y VANGUARD es una **clase de
@@ -38,7 +40,6 @@ import { levelProgress } from '@/lib/xp';
  */
 export default function ProfileScreen() {
   const { state: profileState } = useProfile();
-  const { state: equippedState } = useMyEquippedCosmetics();
 
   // Todavía de mentira: sin duel-repository ni agregación de step_logs no hay
   // de dónde sacar esto de verdad. Ver el comentario de arriba.
@@ -54,7 +55,6 @@ export default function ProfileScreen() {
 
   const { username, xp, streakDays } = profileState.data;
   const { level, xpIntoLevel, xpForNextLevel } = levelProgress(xp);
-  const equipped = equippedState.status === 'ready' ? equippedState.data : EMPTY_EQUIPPED_COSMETICS;
 
   return (
     <ThemedView style={styles.screen}>
@@ -69,7 +69,7 @@ export default function ProfileScreen() {
             />
           </View>
 
-          <CharacterAvatar equipped={equipped} style={styles.character} />
+          <Card style={styles.character} />
 
           <ThemedText type="bodyBold" style={styles.identity}>
             {username}
@@ -90,11 +90,6 @@ export default function ProfileScreen() {
             <StatTile label="STREAK" value={`🔥 ${formatCount(streakDays)}`} />
             <StatTile label="TOTAL STEPS" value={formatCompact(totalSteps)} />
           </View>
-
-          <Button
-            label="Customize character"
-            onPress={() => router.push(ROUTES.customizeCharacter.href)}
-          />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

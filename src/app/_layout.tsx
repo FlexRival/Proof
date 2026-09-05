@@ -67,7 +67,6 @@ export default function RootLayout() {
             ajustes.
           */}
           <Stack.Screen name="friend-profile" />
-          <Stack.Screen name="customize-character" />
         </Stack.Protected>
 
         <Stack.Protected guard={!isSignedIn}>

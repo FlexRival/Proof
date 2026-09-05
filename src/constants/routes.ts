@@ -22,7 +22,6 @@ export type RouteKey =
   | 'victory'
   | 'newDuel'
   | 'friendProfile'
-  | 'customizeCharacter'
   | 'login';
 
 export type RouteDefinition = {
@@ -74,17 +73,6 @@ export const ROUTES: Record<RouteKey, RouteDefinition> = {
     key: 'friendProfile',
     href: '/friend-profile',
     label: 'Friend profile',
-    tab: false,
-  },
-  /**
-   * Personalización del personaje, abierta desde el botón "Customize
-   * character" del Perfil. Destino, no tarea: se apila y se vuelve con el
-   * botón de atrás, como `settings`/`friendProfile`.
-   */
-  customizeCharacter: {
-    key: 'customizeCharacter',
-    href: '/customize-character',
-    label: 'Customize character',
     tab: false,
   },
   /**

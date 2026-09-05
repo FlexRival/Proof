@@ -15,8 +15,7 @@ Referencia de la capa de datos (Supabase / Postgres). Léela antes de tocar
 | `migrations/20260904090000_resolve_expired_competitions_cron.sql` | Activa `pg_cron` / `pg_net` y programa una llamada HTTP cada hora a la Edge Function `resolve-expired-competitions`, que cierra duelos y guerras vencidos. Ver §12. |
 | `migrations/20260904100000_clan_war_stats_view.sql` | Vista `clan_war_stats`: victorias / derrotas / empates / pasos totales de cada clan en guerras, agregados desde `clan_wars`. Ver §11. |
 | `migrations/20260904110000_friendships.sql` | Amistades: tabla `friendships` (solicitud → aceptada/rechazada/cancelada), índice único parcial que impide duplicados en cualquier dirección; RPCs `send_friend_request` / `respond_to_friend_request` / `cancel_friend_request` / `remove_friend`. Ver §13. |
-| `migrations/20260905120000_cosmetics.sql` | Cosméticos de personaje: tablas `cosmetic_items` (catálogo), `user_cosmetics` (desbloqueos LEVEL), `user_equipped_cosmetics` (equipado por slot); desbloqueo automático por nivel vía trigger; RPCs `equip_cosmetic` / `unequip_cosmetic`; catálogo placeholder sembrado. Ver §14. |
-| `migrations/20260905130000_profile_avatar.sql` | Foto de perfil: columna `profiles.avatar_url`, bucket público `avatars` en Storage, policies de `storage.objects` que solo dejan subir/reemplazar/borrar dentro de la propia carpeta `<user_id>/...`. Ver §15. |
+| `migrations/20260905130000_profile_avatar.sql` | Foto de perfil: columna `profiles.avatar_url`, bucket público `avatars` en Storage, policies de `storage.objects` que solo dejan subir/reemplazar/borrar dentro de la propia carpeta `<user_id>/...`. Ver §14. |
 
 Estado de aplicación:
 
@@ -24,16 +23,20 @@ Estado de aplicación:
   proyecto vinculado (`tirhukkivndhmlknvbfr`).
 - Las de clanes (`…150000_clans`, `…150500_clan_wars`), la del cron
   (`…090000_resolve_expired_competitions_cron`), la de amistades
-  (`…110000_friendships`), la de cosméticos (`…120000_cosmetics`) y la de foto
-  de perfil (`…130000_profile_avatar`) **todavía no se han hecho
-  `supabase db push`**. Las de clanes y la de amistades se validaron
-  ejecutándolas sobre un Postgres 18 efímero (PGlite) con su flujo completo;
-  las de cosméticos y foto de perfil se validaron sobre el stack local real de
-  Supabase (`supabase start`, Docker) con su flujo completo (ver §14 y §15) —
-  la de foto de perfil incluso contra la API real de Storage, no solo SQL; la
-  del cron **no se puede validar así** porque ni PGlite ni el stack local por
-  defecto traen `pg_cron`/`pg_net` activos — solo se prueba contra un proyecto
-  Supabase real.
+  (`…110000_friendships`) y la de foto de perfil (`…130000_profile_avatar`)
+  **todavía no se han hecho `supabase db push`**. Las de clanes y la de
+  amistades se validaron ejecutándolas sobre un Postgres 18 efímero (PGlite)
+  con su flujo completo; la de foto de perfil se validó sobre el stack local
+  real de Supabase (`supabase start`, Docker), incluso contra la API real de
+  Storage, no solo SQL (ver §14); la del cron **no se puede validar así**
+  porque ni PGlite ni el stack local por defecto traen `pg_cron`/`pg_net`
+  activos — solo se prueba contra un proyecto Supabase real.
+
+Hubo una migración de cosméticos de personaje
+(`20260905120000_cosmetics.sql`) que se borró sin más: nunca se hizo
+`supabase db push` de ella a ningún proyecto real, así que no hacía falta una
+migración de reversa — la funcionalidad completa (personaje RPG equipable) se
+descartó.
 
 ---
 
@@ -76,7 +79,7 @@ usuario de auth borra el perfil y todo lo que cuelga de él).
 | `xp` | `CHECK >= 0`, solo servidor |
 | `streak_days` | `CHECK >= 0`, solo servidor |
 | `is_pro` | flag de RevenueCat, solo servidor |
-| `avatar_url` | `NULL` hasta que el usuario suba una foto; el cliente la escribe directo (`GRANT UPDATE`), igual que `username` — no es un dato anti-cheat. Ver §15. |
+| `avatar_url` | `NULL` hasta que el usuario suba una foto; el cliente la escribe directo (`GRANT UPDATE`), igual que `username` — no es un dato anti-cheat. Ver §14. |
 | `created_at` / `updated_at` | `updated_at` lo mantiene un trigger `moddatetime` en cada UPDATE |
 
 No hay clases de personaje: el enum `user_class` y la columna `avatar_class` se
@@ -153,7 +156,7 @@ Para cada tabla la migración hace `REVOKE ALL ... FROM authenticated` y luego
 concede de vuelta solo lo seguro:
 
 - **`profiles`**: `SELECT` + `UPDATE (username)` + `UPDATE (avatar_url)`
-  (§15: no es anti-cheat, no da ventaja de juego). `xp`, `level`,
+  (§14: no es anti-cheat, no da ventaja de juego). `xp`, `level`,
   `streak_days`, `is_pro` son físicamente no escribibles por la app aunque la
   fila sea del usuario.
 - **`step_logs`**: `SELECT` + `INSERT (user_id, date, steps_count)` +
@@ -477,89 +480,14 @@ principio de este documento.
 
 ---
 
-## 14. Cosméticos de personaje (`20260905120000_cosmetics.sql`)
+## 14. Foto de perfil (`20260905130000_profile_avatar.sql`)
 
-Catálogo de cosméticos equipables (piel, pelo, outfit, sombrero, accesorio)
-para la pantalla "Customize character" del Perfil (`profile.tsx:82`, botón
-hoy deshabilitado). Mismo principio anti-cheat que el resto: el cliente solo
-lee (`REVOKE ALL` + `GRANT SELECT`), toda mutación pasa por RPCs
-`SECURITY DEFINER`.
-
-### Tipos
-
-- **`cosmetic_slot`** — `SKIN` / `HAIR` / `OUTFIT` / `HEADWEAR` / `ACCESSORY`.
-  Un usuario lleva como mucho un ítem por slot.
-- **`cosmetic_unlock_type`** — `FREE` (disponible para cualquiera) / `LEVEL`
-  (hace falta alcanzar `unlock_level`) / `PRO` (hace falta `profiles.is_pro`).
-
-### Tablas
-
-- **`cosmetic_items`** — catálogo. `id` es un slug (`TEXT`, ej.
-  `hair_pony_blonde`) que la app usa directamente como clave para mapear al
-  asset local; no hace falta una columna `asset_key` aparte. `unlock_level`
-  es `NOT NULL` si y solo si `unlock_type = 'LEVEL'` (constraint). Lo
-  gestionan las migraciones, no el cliente.
-- **`user_cosmetics`** — qué `LEVEL` ha desbloqueado cada usuario. Los `FREE`
-  no necesitan fila (siempre disponibles) y los `PRO` tampoco (se comprueban
-  en vivo, ver `equip_cosmetic`). Privada: solo la ve su dueño.
-- **`user_equipped_cosmetics`** — qué lleva puesto cada usuario ahora mismo,
-  `PRIMARY KEY (user_id, slot)`. **Pública entre autenticados** — a
-  diferencia de `clan_members`, aquí no se concede a `anon` (no hay
-  pantalla pública sin sesión que la necesite): duelos, amigos y pantallas
-  de victoria necesitan poder renderizar el personaje de otro usuario
-  logueado.
-
-### Desbloqueo automático por nivel
-
-Mismo principio que las rachas: el servidor concede solo, el cliente nunca
-"reclama" un desbloqueo. El trigger `profiles_level_cosmetics`
-(`AFTER INSERT OR UPDATE OF level ON profiles`) llama a
-`grant_level_cosmetics(user_id, level)`, que inserta en `user_cosmetics`
-cualquier ítem `LEVEL` cuyo `unlock_level` ya se alcanzó
-(`ON CONFLICT DO NOTHING`, así que es seguro llamarlo de más). Si el nivel
-sube varios escalones de golpe (p. ej. un duelo con mucho XP), concede todos
-los umbrales cruzados de una vez, no solo el último.
-
-### RPCs
-
-| RPC | Quién | Qué hace |
-|---|---|---|
-| `equip_cosmetic(item_id)` | cualquier autenticado | valida elegibilidad (LEVEL → está en `user_cosmetics`; PRO → `profiles.is_pro` ahora mismo) y hace upsert en `user_equipped_cosmetics` para el slot del ítem |
-| `unequip_cosmetic(slot)` | cualquier autenticado | borra lo que hubiera en ese slot para el llamante; idempotente |
-
-Los ítems `PRO` no dejan fila de desbloqueo: la elegibilidad se recalcula en
-cada `equip_cosmetic`, así que un cosmético Pro se deja de poder equipar en
-cuanto `is_pro` vuelve a `false` (sin necesitar limpiar nada aparte).
-
-### Validación
-
-Probada sobre el **stack local real de Supabase** (`supabase start`, con
-Docker), no sobre PGlite — flujo completo dentro de una transacción con
-`ROLLBACK` final (no deja rastro): equipar FREE; rechazar LEVEL sin
-desbloquear; rechazar PRO sin `is_pro`; subir de nivel y comprobar que el
-trigger concede automáticamente (incluyendo un umbral menor ya cruzado de
-paso); equipar tras desbloquear; marcar `is_pro` y equipar un PRO; estado
-equipado completo; `unequip_cosmetic`; RLS (un segundo usuario no ve los
-desbloqueos privados del primero, pero sí ve su equipado público); y que la
-escritura directa a `user_equipped_cosmetics` sin pasar por la RPC se
-rechaza. Aún sin `supabase db push` al proyecto vinculado.
-
-### Catálogo inicial: PLACEHOLDER
-
-Los 19 ítems sembrados al final de la migración (3 pieles, 5 peinados, 5
-outfits, 3 sombreros, 3 accesorios) tienen slugs y nombres provisionales.
-Pendiente de reemplazar/ampliar cuando se cure el set real de assets (pixel
-art estilo LPC/Liberated Pixel Cup) — añadir cosméticos reales será una
-migración de solo-`INSERT`.
-
----
-
-## 15. Foto de perfil (`20260905130000_profile_avatar.sql`)
-
-Foto real subida por el usuario, distinta del personaje de cosméticos (§14):
-esta es la identidad de la cuenta (Ajustes), el personaje sigue siendo el
-avatar RPG (Home, Perfil). No es un dato anti-cheat — no da ninguna ventaja
-de juego — así que no pasa por RPC, va directo como `username`.
+Foto real subida por el usuario: es la identidad de la cuenta (Ajustes). No
+hay ningún personaje RPG que la sustituya ni que dibuje encima — se descartó
+a propósito, junto con un sistema de cosméticos que llegó a probarse en
+local pero nunca se envió (ver la nota al principio de este documento). No es
+un dato anti-cheat — no da ninguna ventaja de juego — así que no pasa por
+RPC, va directo como `username`.
 
 ### Columna
 
@@ -622,5 +550,3 @@ actualizado y visible en el `Image` de la pantalla. Aún sin
 - Umbrales de tier de clan (`100 / 300 / 700 / 1500`).
 - Cupo de clan `max_members` (`20`) y duración por defecto de guerra (`7` días).
 - Frecuencia del cron de cierre de duelos/guerras (`cada hora`).
-- Catálogo de cosméticos (slugs, nombres, `unlock_level` por ítem): todo
-  placeholder hasta curar los assets reales — ver §14.

@@ -7,7 +7,7 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 
 ## Core Loop & Funcionalidades Principales
 - **Conteo de Pasos & XP:** Tracking de pasos diarios (mediante Podómetro / sensores del dispositivo) convertidos automáticamente en XP para subir de nivel al personaje.
-- **Sistema de Personajes:** Creación y personalización de avatar/clase RPG, barra de progreso de XP y pantalla de subida de nivel.
+- **Sistema de Progresión:** Barra de progreso de XP y pantalla de subida de nivel. Sin avatar/personaje RPG visual: se probó un sistema de cosméticos equipables y se descartó (ver Notas de implementación).
 - **Duelos 1v1 Competitivos:** Comparación de pasos y XP acumulado contra amigos en períodos fijos (ej. semanal) consultados en Supabase.
 - **Clanes & Guerras de Clanes:** Grupos con líder, oficiales y miembros. La gente pide entrar (líder/oficiales aceptan) o entra con un código de invitación compartible; se puede expulsar. El líder inicia guerras de clanes (pasos sumados del roster congelado); ganar sube `rank_points` y el tier del clan. Leaderboard de clanes.
 - **Factor Viral / Social:** Generación de imágenes compartibles de duelos y nivel del personaje para redes sociales (`react-native-view-shot`).
@@ -52,6 +52,14 @@ ProofIt es una app RPG móvil desarrollada con Expo (React Native) donde los pas
 - **Sin clases de personaje.** Se descartaron: el esquema ya eliminó el enum
   `user_class` y la columna `avatar_class`, y los tokens de color de clase se
   quitaron del sistema de diseño.
+- **Sin personaje RPG ni cosméticos.** Se construyó y probó un sistema
+  completo de cosméticos equipables (catálogo, desbloqueo por nivel/Pro,
+  `CharacterAvatar`) y se descartó por decisión de producto — nunca se hizo
+  `supabase db push` de su migración, así que se borró sin más (ver
+  `supabase/SCHEMA.md`, nota al principio). Los recuadros de avatar/personaje
+  de las pantallas son huecos reservados del diseño (comentarios "KAN-19"),
+  no un render real. La foto de perfil real (Ajustes) es un dato de cuenta
+  aparte, sin relación con esto.
 - **Diseño: tema único, oscuro.** No hay modo claro (`Colors` en
   `src/constants/colors.ts` no tiene `.light`). Paleta y reglas en
   `docs/design.md`.

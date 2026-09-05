@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/atoms/button';
 import { Card } from '@/components/atoms/card';
-import { CharacterAvatar, EMPTY_EQUIPPED_COSMETICS } from '@/components/molecules/character-avatar';
 import { Chip } from '@/components/atoms/chip';
 import { EmptyState } from '@/components/organisms/empty-state';
 import { MeterBar, type MeterTone } from '@/components/atoms/meter-bar';
@@ -13,22 +12,23 @@ import { ThemedView } from '@/components/atoms/themed-view';
 import { XpProgress } from '@/components/organisms/xp-progress';
 import { ROUTES } from '@/constants/routes';
 import { BottomTabInset, MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
-import { useMyEquippedCosmetics } from '@/hooks/use-my-equipped-cosmetics';
 import { useProfile } from '@/hooks/use-profile';
 import { formatCount } from '@/lib/format';
 import { HOME_DEMO, type DuelSide } from '@/lib/demo-data';
 import { levelProgress } from '@/lib/xp';
-import type { EquippedCosmetics } from '@/repositories';
 
 /**
  * Pantalla principal: quién eres, tu nivel, los pasos de hoy y el duelo en
  * curso.
  *
- * Identidad (username, nivel, XP) y el avatar equipado son **datos reales de
- * la sesión** (`useProfile` / `useMyEquippedCosmetics`). Pasos y duelo
- * **siguen en `HOME_DEMO`**: no hay repositorio de pasos ni de duelos
- * todavía — ese archivo documenta a qué repositorio se conectará cada campo
- * cuando exista.
+ * **No hay ningún personaje RPG que represente al usuario** (se descartó a
+ * propósito, junto con el sistema de cosméticos que lo dibujaba) — los
+ * recuadros de personaje/avatar son huecos reservados, no un render real.
+ *
+ * Identidad (username, nivel, XP) es **dato real de la sesión**
+ * (`useProfile`). Pasos y duelo **siguen en `HOME_DEMO`**: no hay repositorio
+ * de pasos ni de duelos todavía — ese archivo documenta a qué repositorio se
+ * conectará cada campo cuando exista.
  *
  * El "RANK" de la captura no sale: era un sustituto de la clase de personaje
  * descartada, y no hay ningún concepto de rango individual en el esquema
@@ -40,7 +40,6 @@ import type { EquippedCosmetics } from '@/repositories';
  */
 export default function HomeScreen() {
   const { state: profileState } = useProfile();
-  const { state: equippedState } = useMyEquippedCosmetics();
 
   const { steps, stepGoal, duel } = HOME_DEMO;
 
@@ -57,14 +56,14 @@ export default function HomeScreen() {
 
   const { username, xp } = profileState.data;
   const { level, xpIntoLevel, xpForNextLevel } = levelProgress(xp);
-  const equipped = equippedState.status === 'ready' ? equippedState.data : EMPTY_EQUIPPED_COSMETICS;
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <CharacterAvatar equipped={equipped} size={AVATAR_SIZE} />
+            {/* Avatar (KAN-19). */}
+            <Card style={styles.avatar} />
 
             <View style={styles.identity}>
               <ThemedText type="bodyBold">{username}</ThemedText>
@@ -75,7 +74,8 @@ export default function HomeScreen() {
 
           {duel ? (
             <>
-              <CharacterAvatar equipped={equipped} style={styles.character} />
+              {/* Personaje (KAN-19): reserva el espacio del diseño. */}
+              <Card style={styles.character} />
 
               <ThemedText type="heading" style={styles.level}>{`LEVEL ${level}`}</ThemedText>
 
@@ -121,7 +121,7 @@ export default function HomeScreen() {
               />
             </>
           ) : (
-            <NoDuelState steps={steps} equipped={equipped} />
+            <NoDuelState steps={steps} />
           )}
         </ScrollView>
       </SafeAreaView>
@@ -136,7 +136,7 @@ export default function HomeScreen() {
  * compacta que explica para qué sirven: sin duelo no se gana XP, así que
  * enseñar la barra de XP aquí sería enseñar algo que no se mueve.
  */
-function NoDuelState({ steps, equipped }: { steps: number; equipped: EquippedCosmetics }) {
+function NoDuelState({ steps }: { steps: number }) {
   return (
     <>
       <EmptyState
@@ -144,7 +144,8 @@ function NoDuelState({ steps, equipped }: { steps: number; equipped: EquippedCos
         message="Challenge someone and prove who's got it."
         actionLabel="Challenge a friend"
         onAction={() => router.push(ROUTES.newDuel.href)}>
-        <CharacterAvatar equipped={equipped} style={styles.idleCharacter} />
+        {/* Personaje inactivo (KAN-19): reserva el espacio del diseño. */}
+        <Card variant="sunken" style={styles.idleCharacter} />
       </EmptyState>
 
       {/*
@@ -225,6 +226,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+  },
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    padding: 0,
   },
   identity: {
     flex: 1,
