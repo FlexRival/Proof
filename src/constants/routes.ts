@@ -22,6 +22,7 @@ export type RouteKey =
   | 'victory'
   | 'newDuel'
   | 'friendProfile'
+  | 'paywall'
   | 'login';
 
 export type RouteDefinition = {
@@ -75,6 +76,16 @@ export const ROUTES: Record<RouteKey, RouteDefinition> = {
     label: 'Friend profile',
     tab: false,
   },
+  /**
+   * Paywall de Pro. Tarea con principio y fin, como `newDuel`: se abre encima
+   * de donde estabas y se cierra con la `✕`.
+   *
+   * **Todavía no la abre nadie.** Falta decidir qué se bloquea detrás de Pro
+   * (KAN-25) para saber desde dónde se ofrece; mientras tanto se llega por
+   * URL (`/paywall`). Tenerla aquí es lo que hace que enlazarla desde
+   * cualquier pantalla sea un cambio de una línea y siga estando tipado.
+   */
+  paywall: { key: 'paywall', href: '/paywall', label: 'Go Pro', tab: false },
   /**
    * Puerta de entrada sin sesión. No se navega a mano: `src/app/_layout.tsx`
    * la muestra u oculta con `Stack.Protected` según haya sesión o no.

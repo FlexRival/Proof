@@ -67,6 +67,11 @@ export default function RootLayout() {
             ajustes.
           */}
           <Stack.Screen name="friend-profile" />
+          {/*
+            El paywall es tarea, no destino: se abre encima de lo que estabas
+            haciendo cuando algo pide Pro, y su `✕` te devuelve justo ahí.
+          */}
+          <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
         </Stack.Protected>
 
         <Stack.Protected guard={!isSignedIn}>
